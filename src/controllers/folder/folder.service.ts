@@ -14,10 +14,20 @@ export class FolderService {
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
     ) { }
 
+    getCurrentDate(): { year: number; month: number; day: number } {
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        const day = currentDate.getDate();
+
+        return { year, month, day };
+    }
+
     async create(body: Folder): Promise<Folder> {
         body.id = uuidv4()
         body.folders = [];
         body.files = [];
+        body.date = this.getCurrentDate();
 
         const newFolder = await this.folderRepository.save(body);
 
@@ -40,18 +50,46 @@ export class FolderService {
         return verify;
     }
 
+    async findDetails(id: any): Promise<any> {
+        const verify: any = await this.folderRepository.findOne({ where: { id } });
+
+        if (verify) {
+            const folderDetailsPromises = verify.folders.map(async (folderId: string) => {
+                const folderDetails = await this.findOne(folderId);
+                return folderDetails !== null ? folderDetails : undefined;
+            });
+
+            const fileDetailsPromises = verify.files.map(async (fileId: string) => {
+                const fileDetails = await this.fileService.findOne(fileId);
+                return fileDetails !== null ? fileDetails : undefined;
+            });
+
+            // Aguarde todas as promessas e obtenha os detalhes das pastas e arquivos
+            verify.folders = (await Promise.all(folderDetailsPromises)).filter(Boolean);
+            verify.files = (await Promise.all(fileDetailsPromises)).filter(Boolean);
+        }
+
+        return verify;
+    }
+
     async addFolderToFolder(id: string, folderValue: string): Promise<Folder> {
         const folderEntity = await this.findOne(id);
 
         if (!folderEntity) {
-            throw new NotFoundException('Pasta nao encontrada');
+            throw new NotFoundException('Pasta não encontrada');
         }
 
+        // Recuperar o array atual de pastas
+        const currentFolders = folderEntity.folders || [];
+
         // Adicionar a nova pasta ao array
+        currentFolders.push(folderValue);
+
+        // Atualizar o array no banco de dados
         await this.folderRepository
             .createQueryBuilder()
             .update(Folder)
-            .set({ folders: () => `JSON_ARRAY_APPEND(folders, '$', '${folderValue}')` })
+            .set({ folders: currentFolders })
             .where('id = :id', { id })
             .execute();
 
@@ -62,14 +100,20 @@ export class FolderService {
         const folderEntity = await this.findOne(id);
 
         if (!folderEntity) {
-            throw new NotFoundException('Pasta nao encontrada');
+            throw new NotFoundException('Pasta não encontrada');
         }
 
-        // Adicionar a nova pasta ao array
+        // Recuperar o array atual
+        const currentFiles = folderEntity.files || [];
+
+        // Adicionar o novo arquivo ao array
+        currentFiles.push(fileValue);
+
+        // Atualizar o array no banco de dados
         await this.folderRepository
             .createQueryBuilder()
             .update(Folder)
-            .set({ files: () => `JSON_ARRAY_APPEND(folders, '$', '${fileValue}')` })
+            .set({ files: currentFiles })
             .where('id = :id', { id })
             .execute();
 
@@ -77,42 +121,63 @@ export class FolderService {
     }
 
     async removeFolderFromFolder(id: string, folderValue: string): Promise<void> {
-        const files = await this.findOne(folderValue);
-        const result = await this.folderRepository
-            .createQueryBuilder()
-            .update(Folder)
-            .set({
-                folders: () => `JSON_REMOVE(folders, JSON_UNQUOTE(JSON_SEARCH(folders, 'one', '${folderValue}')))`,
-            })
-            .where('id = :id', { id })
-            .execute();
+        const folderEntity = await this.findOne(id);
 
-        //Irá deletar todos os arquivos da pasta apagada
-        if (files.files.length > 0) {
-            for (const fileValue of files.files) {
-                await this.fileService.deletar(fileValue);
-            }
+        if (!folderEntity) {
+            throw new NotFoundException('Pasta não encontrada');
         }
 
-        if (result.affected === 0) {
-            throw new NotFoundException('Pasta não encontrada');
+        // Garantir que o array de pastas esteja inicializado
+        const currentFolders = folderEntity.folders || [];
+
+        // Encontrar o índice da pasta a ser removida
+        const folderIndex = currentFolders.indexOf(folderValue);
+
+        if (folderIndex !== -1) {
+            // Remover a pasta do array
+            currentFolders.splice(folderIndex, 1);
+
+            // Atualizar o array no banco de dados
+            await this.folderRepository
+                .createQueryBuilder()
+                .update(Folder)
+                .set({ folders: currentFolders })
+                .where('id = :id', { id })
+                .execute();
+        } else {
+            throw new NotFoundException('Pasta não encontrada no array');
         }
     }
 
     async removeFileFromFolder(id: string, fileValue: string): Promise<void> {
-        const result = await this.folderRepository
-            .createQueryBuilder()
-            .update(Folder)
-            .set({
-                files: () => `JSON_REMOVE(files, JSON_UNQUOTE(JSON_SEARCH(files, 'one', '${fileValue}')))`,
-            })
-            .where('id = :id', { id })
-            .execute();
+        const folderEntity = await this.findOne(id);
 
-        if (result.affected === 0) {
+        if (!folderEntity) {
             throw new NotFoundException('Pasta não encontrada');
         }
+
+        // Garantir que o array de arquivos esteja inicializado
+        const currentFiles = folderEntity.files || [];
+
+        // Encontrar o índice do arquivo a ser removido
+        const fileIndex = currentFiles.indexOf(fileValue);
+
+        if (fileIndex !== -1) {
+            // Remover o arquivo do array
+            currentFiles.splice(fileIndex, 1);
+
+            // Atualizar o array no banco de dados
+            await this.folderRepository
+                .createQueryBuilder()
+                .update(Folder)
+                .set({ files: currentFiles })
+                .where('id = :id', { id })
+                .execute();
+        } else {
+            throw new NotFoundException('Arquivo não encontrado no array');
+        }
     }
+
 
     async updateTitle(id: any, newTitle: string): Promise<any> {
         const verify = await this.findOne(id);
@@ -148,18 +213,23 @@ export class FolderService {
             return;
         }
 
-        if (deleted.files.length > 0) {
-            for (const fileValue of deleted.files) {
-                await this.fileService.deletar(fileValue);
-            }
-        }
+        // Crie um array de promises para deletar os arquivos associados
+        const deleteFilePromises = deleted.files.map(fileValue =>
+            this.fileService.deletar(fileValue)
+        );
 
-        if (deleted.folders.length > 0) {
-            for (const folderValue of deleted.folders) {
-                await this.deletar(folderValue);
-            }
-        }
+        // Aguarde a resolução de todas as promises de exclusão de arquivos
+        await Promise.all(deleteFilePromises);
 
+        // Crie um array de promises para deletar as pastas associadas
+        const deleteFolderPromises = deleted.folders.map(folderValue =>
+            this.deletar(folderValue)
+        );
+
+        // Aguarde a resolução de todas as promises de exclusão de pastas
+        await Promise.all(deleteFolderPromises);
+
+        // Aguarde a exclusão da pasta principal
         await this.folderRepository.delete(id);
     }
 

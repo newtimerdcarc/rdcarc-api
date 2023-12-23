@@ -36,12 +36,8 @@ export class FileService {
         return parts.length > 1 ? parts[1] : mimeType;
     }
 
-    async create(file: Express.Multer.File, path: string, creatorId: string, insertTo: string): Promise<any> {
-        // Remove o tipo do nome do arquivo
+    async create(file: Express.Multer.File, path: string, creator: string, insertTo: string): Promise<any> {
         const nameWithoutExtension = file.originalname.slice(0, file.originalname.lastIndexOf('.'));
-        const findUser = await this.userService.findOne(creatorId);
-        const creator: string = findUser.first_name || "";
-
         // Realiza o upload e retorna uma url
         const url = ""
         // const url = await this.s3Service.upload(file, path);
@@ -94,9 +90,9 @@ export class FileService {
     async findOne(id: any): Promise<File> {
         const verify = await this.fileRepository.findOne({ where: { id } });
 
-        if (!verify) {
-            throw new HttpException('Arquivo nao encontrado', HttpStatus.BAD_REQUEST);
-        }
+        // if (!verify) {
+        //     throw new HttpException('Arquivo nao encontrado', HttpStatus.BAD_REQUEST);
+        // }
 
         return verify;
     }

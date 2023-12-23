@@ -12,7 +12,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class FileController {
     constructor(private readonly fileService: FileService) { }
 
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Post(':id')
     @ApiBody({ type: FileDto })
     @ApiConsumes('multipart/form-data')

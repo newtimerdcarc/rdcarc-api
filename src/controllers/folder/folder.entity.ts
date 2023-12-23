@@ -19,6 +19,9 @@ export class Folder {
     origin: string;
 
     @Column('json')
+    date: { year: number, month: number, day: number };
+
+    @Column('json')
     folders: string[];
 
     @Column('json')

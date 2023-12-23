@@ -29,6 +29,28 @@ export class PackageService {
         const verify = await this.packageRepository.findOne({ where: { id } });
         return verify;
     }
+    
+    async findDetails(id: any): Promise<any> {
+        const verify: any = await this.packageRepository.findOne({ where: { id } });
+
+        if (verify) {
+            const folderDetailsPromises = verify.folders.map(async (folderId: string) => {
+                const folderDetails = await this.folderService.findOne(folderId);
+                return folderDetails !== null ? folderDetails : undefined;
+            });
+
+            const fileDetailsPromises = verify.files.map(async (fileId: string) => {
+                const fileDetails = await this.fileService.findOne(fileId);
+                return fileDetails !== null ? fileDetails : undefined;
+            });
+
+            // Aguarde todas as promessas e obtenha os detalhes das pastas e arquivos
+            verify.folders = (await Promise.all(folderDetailsPromises)).filter(Boolean);
+            verify.files = (await Promise.all(fileDetailsPromises)).filter(Boolean);
+        }
+
+        return verify;
+    }
 
     async addFolderToPackage(id: string, folderValue: string): Promise<Package> {
         const packageEntity = await this.findOne(id);

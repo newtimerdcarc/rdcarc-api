@@ -36,6 +36,13 @@ export class FolderController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get(':id/details')
+    @ApiOperation({ summary: 'BUSCAR PASTA VIA ID, TRAZENDO SEUS CAMPOS' })
+    async findDetails(@Param('id') id: string): Promise<any> {
+        return this.folderService.findDetails(id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Patch(':id/title')
     @ApiOperation({ summary: 'ATUALIZAR TÍTULO DA PASTA' })
     @ApiBody({ type: UpdateTitleDto })
@@ -48,6 +55,13 @@ export class FolderController {
     @ApiOperation({ summary: 'DELETAR PASTA' })
     async remove(@Param('id') id: string): Promise<void> {
         return this.folderService.remove(id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete(':id/all')
+    @ApiOperation({ summary: 'DELETAR PASTA' })
+    async deletar(@Param('id') id: string): Promise<void> {
+        return this.folderService.deletar(id);
     }
 
 }

@@ -36,6 +36,13 @@ export class PackageController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get(':id/details')
+    @ApiOperation({ summary: 'BUSCAR PACOTE VIA ID, TRAZENDO SEUS CAMPOS' })
+    async findDetails(@Param('id') id: string): Promise<any> {
+        return this.packageService.findDetails(id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Put(':id')
     @ApiOperation({ summary: 'EDITAR PACOTE' })
     @ApiBody({ type: PackageDto })
