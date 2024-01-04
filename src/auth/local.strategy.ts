@@ -4,12 +4,14 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
+import { S3Service } from 'src/controllers/s3/s3.service';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
+    private readonly s3Service: S3Service
   ) {
     super();
   }
@@ -22,7 +24,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     const json = {
       accessToken: this.jwtService.sign({ sub: user.id }),
       user: user
+
     }
+    // await this.s3Service.login(username, password);
+
     return json;
   }
 }

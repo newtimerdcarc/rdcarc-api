@@ -3,11 +3,13 @@ import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @Inject('USER_REPOSITORY') private userRepository: Repository<User>,
+    private s3Service: S3Service
   ) { }
 
   async create(user: User): Promise<User> {
@@ -16,6 +18,9 @@ export class UserService {
     if (verifyUser) {
       throw new HttpException('Usuario ja cadastrado', HttpStatus.BAD_REQUEST);
     }
+
+    //cria usuário no cognito
+    this.s3Service.createUserInCognito(user);
 
     user.id = uuidv4()
     return await this.userRepository.save(user);
@@ -38,19 +43,6 @@ export class UserService {
   async findEmail(username: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { username } });
     return user;
-  }
-
-  generateStrongPassword(): string {
-    const length = 8;
-    const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let password = "";
-
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * charset.length);
-      password += charset.charAt(randomIndex);
-    }
-
-    return password;
   }
 
   async update(id: string, user: any): Promise<User> {
@@ -78,6 +70,9 @@ export class UserService {
       throw new HttpException('Usuario nao encontrado', HttpStatus.BAD_REQUEST);
     }
 
+    const cognito = await this.s3Service.changePassword(verifyUser.username, verifyUser.password, newPassword);
+    console.log(cognito);
+
     await this.userRepository
       .createQueryBuilder()
       .update(User)
@@ -96,6 +91,49 @@ export class UserService {
     }
 
     await this.userRepository.delete(id);
+  }
+
+  async blockUser(id: any): Promise<any> {
+    const verifyUser = await this.findOne(id);
+
+    if (!verifyUser) {
+      throw new HttpException('Usuario nao encontrado', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ active: false })
+      .where("id = :id", { id })
+      .execute();
+
+    return await this.findOne(id);
+  }
+
+  async unblockUser(id: any): Promise<any> {
+    const verifyUser = await this.findOne(id);
+
+    if (!verifyUser) {
+      throw new HttpException('Usuario nao encontrado', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ active: true })
+      .where("id = :id", { id })
+      .execute();
+
+    return await this.findOne(id);
+  }
+
+  //COGNITO
+  async confirmUser(email: string, confirmationCode: string): Promise<any> {
+    const confirm = await this.s3Service.confirmUserInCognito(email, confirmationCode);
+    if (!confirm) {
+      throw new HttpException('Código inválido', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    return this.findEmail(email);
   }
 
 }

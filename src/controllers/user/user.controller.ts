@@ -2,14 +2,18 @@
 import { Controller, Get, Post, Body, Put, Param, Delete, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { UpdatePasswordDto, UpdateUserDto, UserDto } from './user.dto';
+import { ConfirmCodeDto, ResendCodeDto, UpdatePasswordDto, UpdateUserDto, UserDto } from './user.dto';
 import { User } from './user.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { S3Service } from '../s3/s3.service';
 @ApiTags('USUÁRIO')
 @ApiBearerAuth()
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(
+    private readonly userService: UserService,
+    private readonly s3Service: S3Service
+  ) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -19,6 +23,26 @@ export class UserController {
     @Body() body: User,
   ): Promise<User> {
     return this.userService.create(body);
+  }
+
+  @Post('confirm')
+  @ApiOperation({ summary: 'CONFIRMAR USUÁRIO COGNITO' })
+  @ApiBody({ type: ConfirmCodeDto })
+  async confirmUser(
+    @Body() body: ConfirmCodeDto,
+  ): Promise<User> {
+    const { email, confirmationCode } = body;
+    return this.userService.confirmUser(email, confirmationCode);
+  }
+
+  @Post('resend')
+  @ApiOperation({ summary: 'ENVIA OUTRO CÓDIGO COGNITO' })
+  @ApiBody({ type: ResendCodeDto })
+  async resendCode(
+    @Body() body: ResendCodeDto,
+  ): Promise<User> {
+    const { email } = body;
+    return this.s3Service.resendConfirmationCode(email);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -52,6 +76,20 @@ export class UserController {
   @ApiBody({ type: UpdatePasswordDto })
   async updatePassword(@Param('id') id: string, @Body('newPassword') newPassword: string): Promise<any> {
     return this.userService.updatePassword(id, newPassword);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/block')
+  @ApiOperation({ summary: 'BLOQUEAR USUÁRIO' })
+  async blockUser(@Param('id') id: string): Promise<any> {
+    return this.userService.blockUser(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/unblock')
+  @ApiOperation({ summary: 'DESBLOQUEAR USUÁRIO' })
+  async unblockUser(@Param('id') id: string): Promise<any> {
+    return this.userService.unblockUser(id);
   }
 
   @UseGuards(JwtAuthGuard)

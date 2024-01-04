@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Package } from './package.entity';
 import { FileService } from '../file/file.service';
 import { FolderService } from '../folder/folder.service';
+import { S3Service } from '../s3/s3.service';
+import { File } from '../file/file.entity';
 
 @Injectable()
 export class PackageService {
@@ -12,6 +14,7 @@ export class PackageService {
         @Inject('PACKAGE_REPOSITORY') private packageRepository: Repository<Package>,
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
         @Inject(forwardRef(() => FolderService)) private readonly folderService: FolderService,
+        private readonly s3Service: S3Service
     ) { }
 
     async create(body: Package): Promise<Package> {
@@ -29,7 +32,7 @@ export class PackageService {
         const verify = await this.packageRepository.findOne({ where: { id } });
         return verify;
     }
-    
+
     async findDetails(id: any): Promise<any> {
         const verify: any = await this.packageRepository.findOne({ where: { id } });
 
@@ -47,9 +50,74 @@ export class PackageService {
             // Aguarde todas as promessas e obtenha os detalhes das pastas e arquivos
             verify.folders = (await Promise.all(folderDetailsPromises)).filter(Boolean);
             verify.files = (await Promise.all(fileDetailsPromises)).filter(Boolean);
+
+            const bucketFiles = await this.s3Service.getAllObjectsInBucket(verify.title);
+
+            // Verificar e adicionar arquivos ausentes no banco
+            for (const bucketFile of bucketFiles) {
+                const matchingFile = verify.files.find((file) => file.title === bucketFile.fileName);
+
+                if (!matchingFile) {
+                    // Se não encontrar um arquivo correspondente, adicione-o ao banco de dados
+                    const arquivo: File = {
+                        id: uuidv4(),
+                        title: bucketFile.fileName,
+                        url: bucketFile.url,
+                        date: this.convertISOStringToDateDetails(bucketFile.lastModified),
+                        size: this.fileService.bytesToKB(bucketFile.size),
+                        type: this.getFileExtension(bucketFile.key) || "",
+                        description: "",
+                        creator: "",
+                        resolution: "",
+                        contributor: "",
+                        coverage: "",
+                        format: "",
+                        identifier: "",
+                        language: "",
+                        publisher: "",
+                        relation: "",
+                        rights: "",
+                        source: "",
+                        typeNew: ""
+                    };
+
+                    const newFile = await this.fileService.basicCreate(arquivo);
+                    await this.addFileToPackage(id, newFile.id);
+                    verify.files.push(newFile);
+                }
+            }
+
+            // Verificar e excluir arquivos no banco que não estão no S3
+            for (const existingFile of verify.files) {
+                const matchingBucketFile = bucketFiles.find((bucketFile) => bucketFile.fileName === existingFile.title);
+
+                if (!matchingBucketFile) {
+                    // Se não encontrar um arquivo correspondente no S3, exclua-o do banco de dados
+                    // Adicione aqui a chamada para a função que irá deletar o arquivo
+                    await this.fileService.deletar(existingFile.id);
+                    await this.removeFileFromPackage(id, existingFile.id);
+                    // Se precisar de mais informações sobre o arquivo, você pode usar existingFile
+                }
+            }
         }
 
         return verify;
+    }
+
+    convertISOStringToDateDetails(isoString: string): { year: number; month: number; day: number } {
+        const date = new Date(isoString);
+
+        return {
+            year: date.getUTCFullYear(),
+            month: date.getUTCMonth() + 1,
+            day: date.getUTCDate(),
+        };
+    }
+
+    getFileExtension(key: string): string | null {
+        const match = key.match(/\.([^.]+)$/);
+
+        return match ? match[1].toLowerCase() : null;
     }
 
     async addFolderToPackage(id: string, folderValue: string): Promise<Package> {

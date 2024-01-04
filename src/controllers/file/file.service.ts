@@ -36,11 +36,15 @@ export class FileService {
         return parts.length > 1 ? parts[1] : mimeType;
     }
 
+    async basicCreate(file: File): Promise<any> {
+        return await this.fileRepository.save(file);
+    }
+
     async create(file: Express.Multer.File, path: string, creator: string, insertTo: string): Promise<any> {
         const nameWithoutExtension = file.originalname.slice(0, file.originalname.lastIndexOf('.'));
         // Realiza o upload e retorna uma url
-        const url = ""
-        // const url = await this.s3Service.upload(file, path);
+        // const url = ""
+        const url = await this.s3Service.upload(file, path);
 
         const arquivo: File = {
             id: uuidv4(),
@@ -121,9 +125,11 @@ export class FileService {
 
         if (isFolder) {
             await this.folderService.removeFileFromFolder(insertTo, verify.id);
+            await this.s3Service.deleteFileS3(verify.url)
         }
         else if (isPackage) {
             await this.packageService.removeFileFromPackage(insertTo, verify.id);
+            await this.s3Service.deleteFileS3(verify.url)
         }
         else {
             throw new NotFoundException('O id passado não é válido como pasta ou pacote');
@@ -134,7 +140,9 @@ export class FileService {
 
     // Utilizar para remover todas
     async deletar(id: string): Promise<void> {
+        const file = await this.findOne(id);
         await this.fileRepository.delete(id);
+        await this.s3Service.deleteFileS3(file.url);
     }
 
 }

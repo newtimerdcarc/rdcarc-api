@@ -6,8 +6,10 @@ import { FolderProviders } from './folder.providers';
 import { FolderController } from './folder.controller';
 import { PackageModule } from '../package/package.module';
 import { FileModule } from '../file/file.module';
+import { S3Module } from '../s3/s3.module';
 @Module({
     imports: [
+        S3Module,
         DatabaseModule,
         forwardRef(() => PackageModule),
         forwardRef(() => FileModule),

@@ -44,3 +44,16 @@ export class UpdatePasswordDto {
     @ApiProperty()
     newPassword: string;
 }
+
+export class ConfirmCodeDto {
+    @ApiProperty()
+    email: string;
+
+    @ApiProperty()
+    confirmationCode: string;
+}
+
+export class ResendCodeDto {
+    @ApiProperty()
+    email: string;
+}

@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Folder } from './folder.entity';
 import { PackageService } from '../package/package.service';
 import { FileService } from '../file/file.service';
+import { S3Service } from '../s3/s3.service';
+import { File } from '../file/file.entity';
 
 @Injectable()
 export class FolderService {
@@ -12,6 +14,7 @@ export class FolderService {
         @Inject('FOLDER_REPOSITORY') private folderRepository: Repository<Folder>,
         @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
+        private readonly s3Service: S3Service
     ) { }
 
     getCurrentDate(): { year: number; month: number; day: number } {
@@ -67,9 +70,75 @@ export class FolderService {
             // Aguarde todas as promessas e obtenha os detalhes das pastas e arquivos
             verify.folders = (await Promise.all(folderDetailsPromises)).filter(Boolean);
             verify.files = (await Promise.all(fileDetailsPromises)).filter(Boolean);
+
+            // Verifica os arquivos do bucket
+            const bucketFiles = await this.s3Service.getAllObjectsInBucket(`${verify.path}/${verify.title}`);
+
+            // Verificar e adicionar arquivos ausentes no banco
+            for (const bucketFile of bucketFiles) {
+                const matchingFile = verify.files.find((file) => file.title === bucketFile.fileName);
+
+                if (!matchingFile) {
+                    // Se não encontrar um arquivo correspondente, adicione-o ao banco de dados
+                    const arquivo: File = {
+                        id: uuidv4(),
+                        title: bucketFile.fileName,
+                        url: bucketFile.url,
+                        date: this.convertISOStringToDateDetails(bucketFile.lastModified),
+                        size: this.fileService.bytesToKB(bucketFile.size),
+                        type: this.getFileExtension(bucketFile.key) || "",
+                        description: "",
+                        creator: "",
+                        resolution: "",
+                        contributor: "",
+                        coverage: "",
+                        format: "",
+                        identifier: "",
+                        language: "",
+                        publisher: "",
+                        relation: "",
+                        rights: "",
+                        source: "",
+                        typeNew: ""
+                    };
+
+                    const newFile = await this.fileService.basicCreate(arquivo);
+                    await this.addFileToFolder(id, newFile.id);
+                    verify.files.push(newFile);
+                }
+            }
+
+            // Verificar e excluir arquivos no banco que não estão no S3
+            for (const existingFile of verify.files) {
+                const matchingBucketFile = bucketFiles.find((bucketFile) => bucketFile.fileName === existingFile.title);
+
+                if (!matchingBucketFile) {
+                    // Se não encontrar um arquivo correspondente no S3, exclua-o do banco de dados
+                    // Adicione aqui a chamada para a função que irá deletar o arquivo
+                    await this.fileService.deletar(existingFile.id);
+                    await this.removeFileFromFolder(id, existingFile.id);
+                }
+            }
         }
 
         return verify;
+    }
+
+    // Auxiliares para details
+    convertISOStringToDateDetails(isoString: string): { year: number; month: number; day: number } {
+        const date = new Date(isoString);
+
+        return {
+            year: date.getUTCFullYear(),
+            month: date.getUTCMonth() + 1,
+            day: date.getUTCDate(),
+        };
+    }
+
+    getFileExtension(key: string): string | null {
+        const match = key.match(/\.([^.]+)$/);
+
+        return match ? match[1].toLowerCase() : null;
     }
 
     async addFolderToFolder(id: string, folderValue: string): Promise<Folder> {
@@ -177,7 +246,6 @@ export class FolderService {
             throw new NotFoundException('Arquivo não encontrado no array');
         }
     }
-
 
     async updateTitle(id: any, newTitle: string): Promise<any> {
         const verify = await this.findOne(id);
