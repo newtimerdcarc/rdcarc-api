@@ -93,6 +93,13 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch(':id/first')
+  @ApiOperation({ summary: 'PRIMEIRO LOGIN' })
+  async firstLogin(@Param('id') id: string): Promise<any> {
+    return this.userService.firstLogin(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'DELETAR USUÁRIO' })
   async remove(@Param('id') id: string): Promise<void> {

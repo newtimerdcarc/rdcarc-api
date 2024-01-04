@@ -70,8 +70,7 @@ export class UserService {
       throw new HttpException('Usuario nao encontrado', HttpStatus.BAD_REQUEST);
     }
 
-    const cognito = await this.s3Service.changePassword(verifyUser.username, verifyUser.password, newPassword);
-    console.log(cognito);
+    await this.s3Service.changePassword(verifyUser.username, verifyUser.password, newPassword);
 
     await this.userRepository
       .createQueryBuilder()
@@ -127,13 +126,32 @@ export class UserService {
     return await this.findOne(id);
   }
 
+  async firstLogin(id: any): Promise<any> {
+    const verifyUser = await this.findOne(id);
+
+    if (!verifyUser) {
+      throw new HttpException('Usuario nao encontrado', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ first_login: false })
+      .where("id = :id", { id })
+      .execute();
+
+    return await this.findOne(id);
+  }
+
   //COGNITO
   async confirmUser(email: string, confirmationCode: string): Promise<any> {
     const confirm = await this.s3Service.confirmUserInCognito(email, confirmationCode);
     if (!confirm) {
       throw new HttpException('Código inválido', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    return this.findEmail(email);
+    const user = await this.findEmail(email);
+    await this.firstLogin(user.id);
+    return user;
   }
 
 }

@@ -301,7 +301,6 @@ export class S3Service {
             cognitoUser.authenticateUser(authenticationDetails, {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 onSuccess: (session) => {
-                    console.log(session);
                     // Autenticação bem-sucedida
                     resolve();
                 },

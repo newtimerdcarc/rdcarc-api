@@ -28,5 +28,8 @@ export class User {
   phone: string;
 
   @Column({ default: true })
+  first_login: boolean;
+
+  @Column({ default: true })
   active: boolean;
 }
