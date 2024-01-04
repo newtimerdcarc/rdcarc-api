@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: CI - rdcarc-api
 
 on:
   push:
@@ -7,12 +7,26 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::276338641626:role/ecr-git
+        aws-region: us-east-1
+    
+    - name: Login to ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push image
+      run: |
+        docker build -t 276338641626.dkr.ecr.us-east-1.amazonaws.com/newtime:${{github.sha}} .
+        docker push 276338641626.dkr.ecr.us-east-1.amazonaws.com/newtime:${{github.sha}}
