@@ -14,7 +14,7 @@ export class PackageService {
         @Inject('PACKAGE_REPOSITORY') private packageRepository: Repository<Package>,
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
         @Inject(forwardRef(() => FolderService)) private readonly folderService: FolderService,
-        private readonly s3Service: S3Service
+        @Inject(forwardRef(() => S3Service)) private readonly s3Service: S3Service,
     ) { }
 
     async create(body: Package): Promise<Package> {
@@ -30,6 +30,11 @@ export class PackageService {
 
     async findOne(id: any): Promise<Package> {
         const verify = await this.packageRepository.findOne({ where: { id } });
+        return verify;
+    }
+
+    async findByName(title: string): Promise<Package> {
+        const verify = await this.packageRepository.findOne({ where: { title } });
         return verify;
     }
 
@@ -233,6 +238,14 @@ export class PackageService {
                 await this.fileService.deletar(fileValue);
             }
         }
+    }
+
+    async deletePackage(title: string): Promise<void> {
+        const pacote = await this.findByName(title);
+
+        await this.recursiveDelete(pacote);
+
+        await this.packageRepository.delete(pacote.id);
     }
 
 }

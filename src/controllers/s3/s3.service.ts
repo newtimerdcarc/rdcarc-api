@@ -1,12 +1,15 @@
 /* eslint-disable prettier/prettier */
-import { HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger, UnauthorizedException, forwardRef } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
+import { PackageService } from '../package/package.service';
 @Injectable()
 export class S3Service {
     private readonly userPool: CognitoUserPool;
 
-    constructor() {
+    constructor(
+        @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
+    ) {
         const poolData = {
             UserPoolId: process.env.COGNITO_USER_POOL_ID,
             ClientId: process.env.COGNITO_CLIENT_ID,
@@ -76,6 +79,8 @@ export class S3Service {
     async deleteFolderS3(folderPath: string) {
         const bucketS3 = process.env.BUCKET_NAME;
         const s3 = this.getS3();
+
+        await this.packageService.deletePackage(folderPath);
 
         try {
             // Listar objetos na "pasta"

@@ -9,8 +9,8 @@ import { FileModule } from '../file/file.module';
 import { S3Module } from '../s3/s3.module';
 @Module({
     imports: [
-        S3Module,
         DatabaseModule,
+        forwardRef(() => S3Module),
         forwardRef(() => FolderModule),
         forwardRef(() => FileModule),
     ],

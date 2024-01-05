@@ -14,7 +14,7 @@ export class FolderService {
         @Inject('FOLDER_REPOSITORY') private folderRepository: Repository<Folder>,
         @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
-        private readonly s3Service: S3Service
+        @Inject(forwardRef(() => S3Service)) private readonly s3Service: S3Service,
     ) { }
 
     getCurrentDate(): { year: number; month: number; day: number } {

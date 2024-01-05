@@ -11,8 +11,8 @@ import { DatabaseModule } from 'src/database/database.module';
 @Module({
     imports: [
         DatabaseModule,
-        S3Module,
-        UserModule,
+        forwardRef(() => UserModule),
+        forwardRef(() => S3Module),
         forwardRef(() => PackageModule),
         forwardRef(() => FolderModule),
     ],

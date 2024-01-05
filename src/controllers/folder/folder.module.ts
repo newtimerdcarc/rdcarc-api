@@ -7,12 +7,14 @@ import { FolderController } from './folder.controller';
 import { PackageModule } from '../package/package.module';
 import { FileModule } from '../file/file.module';
 import { S3Module } from '../s3/s3.module';
+import { ArchivematicaModule } from '../archivematica/archivematica.module';
 @Module({
     imports: [
-        S3Module,
         DatabaseModule,
-        forwardRef(() => PackageModule),
+        forwardRef(() => S3Module),
         forwardRef(() => FileModule),
+        forwardRef(() => PackageModule),
+        forwardRef(() => ArchivematicaModule),
     ],
     controllers: [FolderController],
     providers: [FolderService, ...FolderProviders],

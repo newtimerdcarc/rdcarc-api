@@ -27,6 +27,9 @@ export class User {
   @Column()
   phone: string;
 
+  @Column({ default: "" })
+  user_archivematica: string;
+
   @Column({ default: true })
   first_login: boolean;
 

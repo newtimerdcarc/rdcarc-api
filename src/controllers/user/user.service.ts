@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,7 +9,7 @@ import { S3Service } from '../s3/s3.service';
 export class UserService {
   constructor(
     @Inject('USER_REPOSITORY') private userRepository: Repository<User>,
-    private s3Service: S3Service
+    @Inject(forwardRef(() => S3Service)) private readonly s3Service: S3Service,
   ) { }
 
   async create(user: User): Promise<User> {

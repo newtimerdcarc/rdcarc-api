@@ -1,8 +1,15 @@
 /* eslint-disable prettier/prettier */
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { S3Service } from './s3.service';
+import { PackageModule } from '../package/package.module';
+import { FileModule } from '../file/file.module';
+import { FolderModule } from '../folder/folder.module';
 @Module({
-    imports: [],
+    imports: [
+        forwardRef(() => FileModule),
+        forwardRef(() => FolderModule),
+        forwardRef(() => PackageModule)
+    ],
     controllers: [],
     providers: [S3Service],
     exports: [S3Service]

@@ -14,6 +14,7 @@ import { UserModule } from './controllers/user/user.module';
 import { FileModule } from './controllers/file/file.module';
 import { FolderModule } from './controllers/folder/folder.module';
 import { PackageModule } from './controllers/package/package.module';
+import { ArchivematicaModule } from './controllers/archivematica/archivematica.module';
 dotenv.config();
 @Module({
   imports: [
@@ -32,6 +33,7 @@ dotenv.config();
     FileModule,
     FolderModule,
     PackageModule,
+    ArchivematicaModule,
   ],
   controllers: [AppController],
   providers: [
