@@ -143,6 +143,23 @@ export class UserService {
     return await this.findOne(id);
   }
 
+  async setUserArchiv(id: any, user_archivematica: string): Promise<any> {
+    const verifyUser = await this.findOne(id);
+
+    if (!verifyUser) {
+      throw new HttpException('Usuario nao encontrado', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ user_archivematica })
+      .where("id = :id", { id })
+      .execute();
+
+    return await this.findOne(id);
+  }
+
   //COGNITO
   async confirmUser(email: string, confirmationCode: string): Promise<any> {
     const confirm = await this.s3Service.confirmUserInCognito(email, confirmationCode);

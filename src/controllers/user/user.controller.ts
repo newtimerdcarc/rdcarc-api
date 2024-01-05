@@ -100,6 +100,16 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch(':id/:user/archivematica')
+  @ApiOperation({ summary: 'ALTERAR USER ARCHIVEMATICA' })
+  async setUserArchiv(
+    @Param('id') id: string,
+    @Param('user') user: string,
+  ): Promise<any> {
+    return this.userService.setUserArchiv(id, user);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'DELETAR USUÁRIO' })
   async remove(@Param('id') id: string): Promise<void> {
