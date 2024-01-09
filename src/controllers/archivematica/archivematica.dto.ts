@@ -6,5 +6,9 @@ export class archivematicaDto {
 
     @ApiProperty()
     folder: string;
-   
+}
+
+export class filenameUrlDto {
+    @ApiProperty()
+    filename: string;
 }

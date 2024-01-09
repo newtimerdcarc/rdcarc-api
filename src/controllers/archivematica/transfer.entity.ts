@@ -7,6 +7,9 @@ export class Transfer {
     uuid: string;
 
     @Column()
+    sip_uuid: string;
+
+    @Column()
     user: string;
 
     @Column()

@@ -6,11 +6,13 @@ import { FolderModule } from '../folder/folder.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { TransferProviders } from './transfer.provider';
 import { TransferController } from './transfer.controller';
+import { ArchivedModule } from '../archived/archived.module';
 @Module({
     imports: [
         DatabaseModule,
         forwardRef(() => S3Module),
         forwardRef(() => FolderModule),
+        forwardRef(() => ArchivedModule),
     ],
     controllers: [TransferController],
     providers: [ArchivematicaService, ...TransferProviders],

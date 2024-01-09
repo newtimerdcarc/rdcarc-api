@@ -76,6 +76,22 @@ export class S3Service {
         }
     }
 
+    async generatePresignedUrl(fileName: string): Promise<any> {
+        const s3 = this.getS3();
+        const params = {
+            Bucket: process.env.AIP_BUCKET_NAME,
+            Key: fileName,
+            Expires: 3600,
+        };
+
+        const res = {
+            url: ''
+        }
+
+        res.url = await s3.getSignedUrl('getObject', params);
+        return res;
+    }
+
     async deleteFolderS3(folderPath: string) {
         const bucketS3 = process.env.BUCKET_NAME;
         const s3 = this.getS3();
