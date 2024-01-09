@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { archivematicaDto, filenameUrlDto } from '../archivematica/archivematica.dto';
+import { archivematicaDto, filePathDto, filenameUrlDto } from '../archivematica/archivematica.dto';
 import { ArchivematicaService } from '../archivematica/archivematica.service';
 import { S3Service } from '../s3/s3.service';
 import { Transfer } from './transfer.entity';
@@ -43,13 +43,31 @@ export class TransferController {
         return this.archService.create(body);
     }
 
-    @Post('download')
+    @Post('downloadAip')
     @ApiOperation({ summary: 'RETORNA A URL PARA DOWNLOAD DE UM ARQUIVO DO AIP' })
-    async urlDownload(
+    async aipDownload(
         @Body() body: filenameUrlDto
     ): Promise<any> {
         const { filename } = body;
-        return this.s3Service.generatePresignedUrl(filename);
+        return this.s3Service.generateAipPresignedUrl(filename);
+    }
+
+    @Post('downloadDip')
+    @ApiOperation({ summary: 'RETORNA A URL PARA DOWNLOAD DE UM ARQUIVO DIP' })
+    async dipDownload(
+        @Body() body: filenameUrlDto
+    ): Promise<any> {
+        const { filename } = body;
+        return this.s3Service.generateDipPresignedUrl(filename);
+    }
+
+    @Post('getS3')
+    @ApiOperation({ summary: 'RETORNA A OBJETOS DE UMA FOLDER DIP' })
+    async getObjects(
+        @Body() body: filePathDto
+    ): Promise<any> {
+        const { folderPath } = body;
+        return this.s3Service.getFolderS3(folderPath);
     }
 
     @Post('package')

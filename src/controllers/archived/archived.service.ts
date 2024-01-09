@@ -27,8 +27,13 @@ export class ArchivedService {
                 package_type: "DIP"
             }
         });
-        
-        file.DIP = dip[0];
+
+        if (dip) {
+            const files3 = await this.s3Service.getFolderS3(dip[0].current_path);
+            file.DIP = dip[0];
+            file.DIP.files = files3;
+        }
+
         return file;
     }
 
@@ -74,15 +79,15 @@ export class ArchivedService {
     private removeAipExtension(pacote: any): string {
         const partes = pacote.current_full_path.split('/');
         const nomeFinal = partes[partes.length - 1];
-    
+
         // Remover extensão .7z
         const semExtensao = nomeFinal.replace('.7z', '');
-    
+
         // Remover prefixo com uuid
         const semUuid = semExtensao.split('-').slice(2).join('-');
-    
+
         return semUuid;
     }
-    
+
 
 }

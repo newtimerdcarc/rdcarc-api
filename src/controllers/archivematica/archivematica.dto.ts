@@ -12,3 +12,7 @@ export class filenameUrlDto {
     @ApiProperty()
     filename: string;
 }
+export class filePathDto {
+    @ApiProperty()
+    folderPath: string;
+}

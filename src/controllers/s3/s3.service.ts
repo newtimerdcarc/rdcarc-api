@@ -76,10 +76,26 @@ export class S3Service {
         }
     }
 
-    async generatePresignedUrl(fileName: string): Promise<any> {
+    async generateAipPresignedUrl(fileName: string): Promise<any> {
         const s3 = this.getS3();
         const params = {
             Bucket: process.env.AIP_BUCKET_NAME,
+            Key: fileName,
+            Expires: 3600,
+        };
+
+        const res = {
+            url: ''
+        }
+
+        res.url = await s3.getSignedUrl('getObject', params);
+        return res;
+    }
+
+    async generateDipPresignedUrl(fileName: string): Promise<any> {
+        const s3 = this.getS3();
+        const params = {
+            Bucket: process.env.DIP_BUCKET_NAME,
             Key: fileName,
             Expires: 3600,
         };
@@ -132,6 +148,28 @@ export class S3Service {
             } else {
                 throw new Error('Não foi possível excluir a pasta e seus arquivos.');
             }
+        } catch (err) {
+            console.error('Erro ao excluir a pasta no S3:', err);
+            throw err;
+        }
+    }
+
+    async getFolderS3(folderPath: string): Promise<any> {
+        const bucketS3 = process.env.DIP_BUCKET_NAME;
+        const s3 = this.getS3();
+
+        try {
+            // Listar objetos na "pasta"
+            const listParams = {
+                Bucket: bucketS3,
+                Prefix: `${folderPath}`,
+            };
+
+            const objects = await s3.listObjectsV2(listParams).promise();
+
+            const objetos = objects.Contents.filter(objeto => objeto.Size > 0);
+            return objetos;
+
         } catch (err) {
             console.error('Erro ao excluir a pasta no S3:', err);
             throw err;
