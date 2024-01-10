@@ -171,7 +171,7 @@ export class S3Service {
             return objetos;
 
         } catch (err) {
-            console.error('Erro ao excluir a pasta no S3:', err);
+            console.error('Erro ao obter a pasta no S3:', err);
             throw err;
         }
     }
