@@ -108,6 +108,22 @@ export class S3Service {
         return res;
     }
 
+    async generateUrl(url: string): Promise<{ url: string }> {
+        const s3 = this.getS3();
+        const params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: this.extractKeyFromUrl(url),
+            Expires: 3600,
+        };
+
+        const res = {
+            url: '',
+        };
+
+        res.url = await s3.getSignedUrlPromise('getObject', params);
+        return res;
+    }
+
     async deleteFolderS3(folderPath: string) {
         const bucketS3 = process.env.BUCKET_NAME;
         const s3 = this.getS3();
@@ -239,7 +255,8 @@ export class S3Service {
     }
 
     extractKeyFromUrl(url: string): string {
-        const parts = url.split('/');
+        const decodedUrl = decodeURIComponent(url);
+        const parts = decodedUrl.split('/');
         return parts.slice(3).join('/');
     }
 

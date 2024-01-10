@@ -43,6 +43,15 @@ export class TransferController {
         return this.archService.create(body);
     }
 
+    @Post('download')
+    @ApiOperation({ summary: 'RETORNA A URL PARA DOWNLOAD DE UM ARQUIVO DO S3' })
+    async download(
+        @Body() body: filenameUrlDto
+    ): Promise<any> {
+        const { filename } = body;
+        return this.s3Service.generateUrl(filename);
+    }
+
     @Post('downloadAip')
     @ApiOperation({ summary: 'RETORNA A URL PARA DOWNLOAD DE UM ARQUIVO DO AIP' })
     async aipDownload(
