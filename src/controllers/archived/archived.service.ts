@@ -4,7 +4,6 @@ import { Raw, Repository } from 'typeorm';
 import { S3Service } from '../s3/s3.service';
 import { Archived } from './archived.entity';
 import { ArchivematicaService } from '../archivematica/archivematica.service';
-
 @Injectable()
 export class ArchivedService {
 
@@ -30,20 +29,15 @@ export class ArchivedService {
 
         if (dip) {
             const files3 = await this.s3Service.getFolderS3(dip[0].current_path);
-
             // Filtro para objetos contendo "METS" na Key
             const mets = files3.filter(obj => obj.Key.includes("METS"));
-
             // Filtro para objetos contendo "processingMCP" na Key
             const pointer = files3.filter(obj => obj.Key.includes("processingMCP"));
 
-            // Remover os objetos encontrados do array original
-            const dips = files3.filter(obj => !obj.Key.includes("METS") && !obj.Key.includes("processingMCP"));
-            
             file.DIP = dip[0];
-            file.DIP.files = dips;
-            file.DIP.mets = mets;
-            file.DIP.pointer = pointer;
+            file.DIP.files = files3;
+            file.DIP.mets = mets[0];
+            file.DIP.pointer = pointer[0];
         }
 
         return file;
