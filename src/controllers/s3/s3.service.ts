@@ -170,6 +170,130 @@ export class S3Service {
         }
     }
 
+    async deleteFolderNoPackageS3(folderPath: string) {
+        const bucketS3 = process.env.BUCKET_NAME;
+        const s3 = this.getS3();
+
+        try {
+            // Listar objetos na "pasta"
+            const listParams = {
+                Bucket: bucketS3,
+                Prefix: folderPath,
+            };
+
+            const objects = await s3.listObjectsV2(listParams).promise();
+
+            // Criar uma lista de objetos para exclusão
+            const deleteParams = {
+                Bucket: bucketS3,
+                Delete: { Objects: [] },
+            };
+
+            objects.Contents.forEach(obj => {
+                deleteParams.Delete.Objects.push({ Key: obj.Key });
+            });
+
+            // Excluir objetos
+            if (deleteParams.Delete.Objects.length > 0) {
+                await s3.deleteObjects(deleteParams).promise();
+            }
+
+            // Excluir a própria "pasta"
+            await s3.deleteObject({ Bucket: bucketS3, Key: folderPath }).promise();
+
+            // Verificar se a "pasta" foi realmente excluída consultando o bucket novamente
+            const folderExists = await this.checkFileExists(bucketS3, folderPath);
+            if (!folderExists) {
+                return { message: 'Pasta e seus arquivos excluídos com sucesso.' };
+            } else {
+                throw new Error('Não foi possível excluir a pasta e seus arquivos.');
+            }
+        } catch (err) {
+            console.error('Erro ao excluir a pasta no S3:', err);
+            throw err;
+        }
+    }
+
+    async renameFolderS3(folderPath: string, newName: string) {
+        const bucketS3 = process.env.BUCKET_NAME;
+        const s3 = this.getS3();
+
+        try {
+            // Listar objetos na "pasta" original
+            const listParams = {
+                Bucket: bucketS3,
+                Prefix: folderPath,
+            };
+
+            const objects = await s3.listObjectsV2(listParams).promise();
+
+            // Criar uma lista de objetos para copiar
+            const copyParams = {
+                Bucket: bucketS3,
+                CopySource: '',
+                Key: '',
+            };
+
+            // Copiar cada objeto com o novo nome
+            for (const obj of objects.Contents) {
+                copyParams.CopySource = `${bucketS3}/${obj.Key}`;
+                copyParams.Key = obj.Key.replace(folderPath, newName);
+
+                await s3.copyObject(copyParams).promise();
+
+                // Renomear objetos aninhados (caso sejam "pastas" também)
+                if (obj.Key.endsWith('/')) {
+                    // Iterar pelos objetos aninhados usando um loop
+                    let subFolderPath = obj.Key;
+                    while (subFolderPath !== folderPath) {
+                        const subListParams = {
+                            Bucket: bucketS3,
+                            Prefix: subFolderPath,
+                        };
+
+                        const subObjects = await s3.listObjectsV2(subListParams).promise();
+
+                        for (const subObj of subObjects.Contents) {
+                            copyParams.CopySource = `${bucketS3}/${subObj.Key}`;
+                            copyParams.Key = subObj.Key.replace(folderPath, newName);
+
+                            await s3.copyObject(copyParams).promise();
+                        }
+
+                        subFolderPath = subFolderPath.substring(0, subFolderPath.lastIndexOf('/'));
+                    }
+                }
+            }
+
+            // Excluir objetos originais
+            const deleteParams = {
+                Bucket: bucketS3,
+                Delete: { Objects: [] },
+            };
+
+            objects.Contents.forEach(obj => {
+                deleteParams.Delete.Objects.push({ Key: obj.Key });
+            });
+
+            // Excluir objetos originais
+            if (deleteParams.Delete.Objects.length > 0) {
+                await s3.deleteObjects(deleteParams).promise();
+            }
+
+            // Verificar se a "pasta" original foi realmente excluída consultando o bucket novamente
+            const folderExists = await this.checkFileExists(bucketS3, folderPath);
+            if (!folderExists) {
+                // return { message: 'Pasta renomeada com sucesso.' };
+                return true;
+            } else {
+                throw new Error('Não foi possível renomear a pasta.');
+            }
+        } catch (err) {
+            console.error('Erro ao renomear a pasta no S3:', err);
+            throw err;
+        }
+    }
+
     async getFolderS3(folderPath: string): Promise<any> {
         const bucketS3 = process.env.DIP_BUCKET_NAME;
         const s3 = this.getS3();

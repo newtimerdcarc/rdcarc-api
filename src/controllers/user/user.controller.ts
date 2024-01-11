@@ -70,7 +70,7 @@ export class UserController {
     return this.userService.update(id, body);
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Patch(':id/password')
   @ApiOperation({ summary: 'ATUALIZAR SENHA DO USUÁRIO' })
   @ApiBody({ type: UpdatePasswordDto })

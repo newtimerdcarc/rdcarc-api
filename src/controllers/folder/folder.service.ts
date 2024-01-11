@@ -1,16 +1,18 @@
 /* eslint-disable prettier/prettier */
 import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Raw, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Folder } from './folder.entity';
 import { PackageService } from '../package/package.service';
 import { FileService } from '../file/file.service';
+import { S3Service } from '../s3/s3.service';
 @Injectable()
 export class FolderService {
     constructor(
         @Inject('FOLDER_REPOSITORY') private folderRepository: Repository<Folder>,
         @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
+        @Inject(forwardRef(() => S3Service)) private readonly s3Service: S3Service,
     ) { }
 
     getCurrentDate(): { year: number; month: number; day: number } {
@@ -45,8 +47,15 @@ export class FolderService {
     }
 
     async findOne(id: any): Promise<Folder> {
-        const verify = await this.folderRepository.findOne({ where: { id } });
-        return verify;
+        return await this.folderRepository.findOne({ where: { id } });
+    }
+
+    async findContainsPath(olderPath: string): Promise<Folder[]> {
+        return await this.folderRepository.find({
+            where: {
+                path: Raw(alias => `${alias} LIKE '%${olderPath}%'`)
+            }
+        });
     }
 
     async findDetails(id: any): Promise<any> {
@@ -211,6 +220,25 @@ export class FolderService {
         return await this.findOne(id);
     }
 
+    async updatePath(id: any, olderFolder: string, newFolder: string): Promise<any> {
+        const verify = await this.findOne(id);
+
+        if (!verify) {
+            throw new NotFoundException('Pasta nao encontrada');
+        }
+
+        const path = verify.path.replace(olderFolder, newFolder);
+
+        await this.folderRepository
+            .createQueryBuilder()
+            .update(Folder)
+            .set({ path })
+            .where("id = :id", { id })
+            .execute();
+
+        return await this.findOne(id);
+    }
+
     async remove(id: string): Promise<void> {
         const verify = await this.findOne(id);
 
@@ -218,6 +246,7 @@ export class FolderService {
             throw new NotFoundException('Pasta não encontrada');
         }
 
+        await this.s3Service.deleteFolderNoPackageS3(`${verify.path}/${verify.title}`);
         await this.folderRepository.delete(id);
     }
 
@@ -243,6 +272,9 @@ export class FolderService {
 
         // Aguarde a resolução de todas as promises de exclusão de pastas
         await Promise.all(deleteFolderPromises);
+
+        // Deleta a pasta no s3
+        await this.s3Service.deleteFolderNoPackageS3(`${deleted.path}/${deleted.title}`);
 
         // Aguarde a exclusão da pasta principal
         await this.folderRepository.delete(id);

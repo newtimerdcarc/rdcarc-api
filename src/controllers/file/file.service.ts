@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { HttpException, HttpStatus, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Raw, Repository } from 'typeorm';
 import { File } from './file.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { S3Service } from '../s3/s3.service';
@@ -91,14 +91,16 @@ export class FileService {
         return this.fileRepository.find();
     }
 
+    async findConatainsPath(olderPath: string): Promise<File[]> {
+        return await this.fileRepository.find({
+            where: {
+                url: Raw(alias => `${alias} LIKE '%amazonaws.com/${olderPath}%'`)
+            }
+        });
+    }
+
     async findOne(id: any): Promise<File> {
-        const verify = await this.fileRepository.findOne({ where: { id } });
-
-        // if (!verify) {
-        //     throw new HttpException('Arquivo nao encontrado', HttpStatus.BAD_REQUEST);
-        // }
-
-        return verify;
+        return await this.fileRepository.findOne({ where: { id } });
     }
 
     async update(id: string, body: any): Promise<File> {
@@ -138,11 +140,28 @@ export class FileService {
         await this.fileRepository.delete(id);
     }
 
+    async updatePath(id: any, olderFolder: string, newFolder: string): Promise<any> {
+        const verify = await this.findOne(id);
+
+        if (!verify) {
+            throw new NotFoundException('Arquivo nao encontrado');
+        }
+
+        const url = verify.url.replace(olderFolder, newFolder);
+        
+        await this.fileRepository
+            .createQueryBuilder()
+            .update(File)
+            .set({ url })
+            .where("id = :id", { id })
+            .execute();
+
+        return await this.findOne(id);
+    }
+
     // Utilizar para remover todas
     async deletar(id: string): Promise<void> {
-        const file = await this.findOne(id);
         await this.fileRepository.delete(id);
-        await this.s3Service.deleteFileS3(file.url);
     }
 
 }

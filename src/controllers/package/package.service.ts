@@ -1,19 +1,27 @@
 /* eslint-disable prettier/prettier */
-import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Package } from './package.entity';
 import { FileService } from '../file/file.service';
 import { FolderService } from '../folder/folder.service';
+import { S3Service } from '../s3/s3.service';
 @Injectable()
 export class PackageService {
     constructor(
         @Inject('PACKAGE_REPOSITORY') private packageRepository: Repository<Package>,
         @Inject(forwardRef(() => FileService)) private readonly fileService: FileService,
         @Inject(forwardRef(() => FolderService)) private readonly folderService: FolderService,
+        @Inject(forwardRef(() => S3Service)) private readonly s3Service: S3Service,
     ) { }
 
     async create(body: Package): Promise<Package> {
+        const exist = await this.findByName(body.title);
+
+        if (exist) {
+            throw new HttpException('Já existe um pacote com esse nome!', HttpStatus.BAD_REQUEST);
+        }
+
         body.id = uuidv4()
         body.folders = [];
         body.files = [];
@@ -25,13 +33,11 @@ export class PackageService {
     }
 
     async findOne(id: any): Promise<Package> {
-        const verify = await this.packageRepository.findOne({ where: { id } });
-        return verify;
+        return await this.packageRepository.findOne({ where: { id } });
     }
 
     async findByName(title: string): Promise<Package> {
-        const verify = await this.packageRepository.findOne({ where: { title } });
-        return verify;
+        return await this.packageRepository.findOne({ where: { title } });
     }
 
     async findDetails(id: any): Promise<any> {
@@ -157,7 +163,35 @@ export class PackageService {
             throw new NotFoundException('Pacote nao encontrado');
         }
 
+        const existName = await this.findByName(body.title);
+
+        if (existName) {
+            throw new HttpException('Já existe um pacote com esse nome!', HttpStatus.BAD_REQUEST);
+        }
+
         await this.packageRepository.update(id, body);
+
+        // Está alterando o título
+        if (body.title !== verify.title) {
+            // Alterando o nome no S3
+            const s3Rename = await this.s3Service.renameFolderS3(verify.title, body.title);
+
+            if (s3Rename) {
+                // Obtendo as pastas que contem o Path
+                const folders = await this.folderService.findContainsPath(verify.title);
+                // Alterando as pastas
+                for (const folder of folders) {
+                    await this.folderService.updatePath(folder.id, verify.title, body.title);
+                }
+                // Obtem todos os arquivos com o path antigo
+                const allFiles = await this.fileService.findConatainsPath(verify.title);
+                // Alterando as urls pela nova
+                for (const file of allFiles) {
+                    await this.fileService.updatePath(file.id, verify.title, body.title);
+                }
+            }
+        }
+
         return this.findOne(id);
     }
 
@@ -169,6 +203,7 @@ export class PackageService {
         }
 
         await this.recursiveDelete(verify);
+        await this.s3Service.deleteFolderS3(verify.title);
 
         await this.packageRepository.delete(id);
     }
@@ -189,9 +224,7 @@ export class PackageService {
 
     async deletePackage(title: string): Promise<void> {
         const pacote = await this.findByName(title);
-
         await this.recursiveDelete(pacote);
-
         await this.packageRepository.delete(pacote.id);
     }
 
