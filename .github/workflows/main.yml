@@ -28,5 +28,5 @@ jobs:
 
     - name: Build and push image
       run: |
-        docker build -t 276338641626.dkr.ecr.us-east-1.amazonaws.com/newtime:${{github.sha}} .
-        docker push 276338641626.dkr.ecr.us-east-1.amazonaws.com/newtime:${{github.sha}}
+        docker build -t public.ecr.aws/h2e7d4k5/newtime-prod:${{github.sha}} .
+        docker push public.ecr.aws/h2e7d4k5/newtime-prod:${{github.sha}}
