@@ -7,7 +7,13 @@ export class archivematicaDto {
     @ApiProperty()
     folder: string;
 }
+export class transferStatusDto {
+    @ApiProperty()
+    username: string;
 
+    @ApiProperty()
+    uuid: string;
+}
 export class filenameUrlDto {
     @ApiProperty()
     filename: string;

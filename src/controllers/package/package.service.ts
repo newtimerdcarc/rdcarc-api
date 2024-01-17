@@ -202,8 +202,10 @@ export class PackageService {
             throw new NotFoundException('Pacote não encontrado');
         }
 
-        await this.recursiveDelete(verify);
-        await this.s3Service.deleteFolderS3(verify.title);
+        if (verify.folders.length > 0 || verify.files.length > 0) {
+            await this.recursiveDelete(verify);
+            await this.s3Service.deleteFolderS3(verify.title);
+        }
 
         await this.packageRepository.delete(id);
     }

@@ -246,7 +246,9 @@ export class FolderService {
             throw new NotFoundException('Pasta não encontrada');
         }
 
-        await this.s3Service.deleteFolderNoPackageS3(`${verify.path}/${verify.title}`);
+        if (verify.folders.length > 0 || verify.files.length > 0) {
+            await this.s3Service.deleteFolderNoPackageS3(`${verify.path}/${verify.title}`);
+        }
         await this.folderRepository.delete(id);
     }
 
@@ -257,24 +259,26 @@ export class FolderService {
             return;
         }
 
-        // Crie um array de promises para deletar os arquivos associados
-        const deleteFilePromises = deleted.files.map(fileValue =>
-            this.fileService.deletar(fileValue)
-        );
+        if (deleted.folders.length > 0 || deleted.files.length > 0) {
+            // Crie um array de promises para deletar os arquivos associados
+            const deleteFilePromises = deleted.files.map(fileValue =>
+                this.fileService.deletar(fileValue)
+            );
 
-        // Aguarde a resolução de todas as promises de exclusão de arquivos
-        await Promise.all(deleteFilePromises);
+            // Aguarde a resolução de todas as promises de exclusão de arquivos
+            await Promise.all(deleteFilePromises);
 
-        // Crie um array de promises para deletar as pastas associadas
-        const deleteFolderPromises = deleted.folders.map(folderValue =>
-            this.deletar(folderValue)
-        );
+            // Crie um array de promises para deletar as pastas associadas
+            const deleteFolderPromises = deleted.folders.map(folderValue =>
+                this.deletar(folderValue)
+            );
 
-        // Aguarde a resolução de todas as promises de exclusão de pastas
-        await Promise.all(deleteFolderPromises);
+            // Aguarde a resolução de todas as promises de exclusão de pastas
+            await Promise.all(deleteFolderPromises);
 
-        // Deleta a pasta no s3
-        await this.s3Service.deleteFolderNoPackageS3(`${deleted.path}/${deleted.title}`);
+            // Deleta a pasta no s3
+            await this.s3Service.deleteFolderNoPackageS3(`${deleted.path}/${deleted.title}`);
+        }
 
         // Aguarde a exclusão da pasta principal
         await this.folderRepository.delete(id);

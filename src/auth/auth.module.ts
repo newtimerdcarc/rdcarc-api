@@ -14,7 +14,7 @@ import { S3Module } from 'src/controllers/s3/s3.module';
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,
-      signOptions: { expiresIn: '360h' },
+      signOptions: { expiresIn: '1h' },
     }),
     S3Module
   ],

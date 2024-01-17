@@ -49,17 +49,16 @@ export class ArchivematicaService {
         try {
             const response = await axios.post(`${this.apiUrl}/v2beta/package`, body, { headers });
             const id = response.data.id;
+            const res = {uuid: id};
+            // await new Promise(resolve => setTimeout(resolve, 1000));
+            // let res;
+            // do {
+            //     res = await this.transferStatus(body.username, id);
+            //     res.user = body.username;
+            //     // await new Promise(resolve => setTimeout(resolve, 1000)); // Pausa por 1 segundo antes de verificar novamente
+            // } while (res.status !== 'COMPLETE');
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            let res;
-            do {
-                res = await this.transferStatus(body.username, id);
-                res.user = body.username;
-                // await new Promise(resolve => setTimeout(resolve, 1000)); // Pausa por 1 segundo antes de verificar novamente
-            } while (res.status !== 'COMPLETE');
-
-            await this.create(res);
+            // await this.create(res);
             await this.s3Service.deleteFolderS3(body.folder);
             return res;
         } catch (error) {
@@ -68,20 +67,20 @@ export class ArchivematicaService {
         }
     }
 
-    async transferStatus(username: string, uuid: string): Promise<any> {
-        const headers = {
-            Authorization: `ApiKey ${username}:${this.apiKey}`,
-            Host: this.host
-        };
+    // async transferStatus(username: string, uuid: string): Promise<any> {
+    //     const headers = {
+    //         Authorization: `ApiKey ${username}:${this.apiKey}`,
+    //         Host: this.host
+    //     };
 
-        try {
-            const response = await axios.get(`${this.apiUrl}/transfer/status/${uuid}`, { headers });
-            return response.data;
-        } catch (error) {
-            console.error('Erro na chamada HTTP:', error.message);
-            throw error;
-        }
-    }
+    //     try {
+    //         const response = await axios.get(`${this.apiUrl}/transfer/status/${uuid}`, { headers });
+    //         return response.data;
+    //     } catch (error) {
+    //         console.error('Erro na chamada HTTP:', error.message);
+    //         throw error;
+    //     }
+    // }
 
     async getAllPackages(username: string): Promise<any> {
         const headers = {
