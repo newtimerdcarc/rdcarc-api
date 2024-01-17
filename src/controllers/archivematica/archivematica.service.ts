@@ -50,7 +50,7 @@ export class ArchivematicaService {
             const response = await axios.post(`${this.apiUrl}/v2beta/package`, body, { headers });
             const id = response.data.id;
             const res = {uuid: id};
-            // await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
             // let res;
             // do {
             //     res = await this.transferStatus(body.username, id);
