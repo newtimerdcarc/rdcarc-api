@@ -28,7 +28,16 @@ export class FileService {
     }
 
     bytesToKB(bytes: number): string {
-        return (bytes / 1024).toFixed(2) + ' KB';
+        if (bytes < 2 * 1024 * 1024) {
+            // Convertendo para KB
+            return (bytes / 1024).toFixed(2) + ' KB';
+        } else if (bytes < 999 * 1024 * 1024) {
+            // Convertendo para MB
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        } else {
+            // Convertendo para GB
+            return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
     }
 
     removeFilePrefix(mimeType: string): string {
@@ -148,7 +157,7 @@ export class FileService {
         }
 
         const url = verify.url.replace(olderFolder, newFolder);
-        
+
         await this.fileRepository
             .createQueryBuilder()
             .update(File)

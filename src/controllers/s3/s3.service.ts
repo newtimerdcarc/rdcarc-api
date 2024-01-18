@@ -29,7 +29,58 @@ export class S3Service {
         const bucketS3 = process.env.BUCKET_NAME;
         const path: string = folder;
 
-        return await this.uploadS3(file.buffer, bucketS3, path + '/' + originalname);
+        // Verifica se o tamanho é maior que 100MB
+        if (file.size > 100 * 1024 * 1024) {
+            return await this.uploadMultipart(file.buffer, bucketS3, path + '/' + originalname);
+        } else {
+            return await this.uploadS3(file.buffer, bucketS3, path + '/' + originalname);
+        }
+    }
+
+    async uploadMultipart(fileBuffer, bucket, key): Promise<string> {
+        const s3 = this.getS3();
+        // Passo 1: Inicia o upload multipart
+        const createMultipartUploadResponse = await s3.createMultipartUpload({
+            Bucket: bucket,
+            Key: key,
+        }).promise();
+
+        const uploadId = createMultipartUploadResponse.UploadId;
+
+        // Passo 2: Divide o arquivo em partes e faz o upload de cada parte
+        const partSize = 200 * 1024 * 1024; // 200MB por parte
+        const numParts = Math.ceil(fileBuffer.length / partSize);
+        const uploadPromises = [];
+
+        for (let i = 0; i < numParts; i++) {
+            const start = i * partSize;
+            const end = Math.min(start + partSize, fileBuffer.length);
+
+            const uploadPartResponse = await s3.uploadPart({
+                Bucket: bucket,
+                Key: key,
+                UploadId: uploadId,
+                PartNumber: i + 1,
+                Body: fileBuffer.slice(start, end),
+            }).promise();
+
+            uploadPromises.push({
+                PartNumber: i + 1,
+                ETag: uploadPartResponse.ETag,
+            });
+        }
+
+        // Passo 3: Completa o upload multipart
+        const completeMultipartUploadResponse = await s3.completeMultipartUpload({
+            Bucket: bucket,
+            Key: key,
+            UploadId: uploadId,
+            MultipartUpload: {
+                Parts: uploadPromises,
+            },
+        }).promise();
+
+        return completeMultipartUploadResponse.Location;
     }
 
     async uploadS3(file, bucket, name): Promise<string> {
