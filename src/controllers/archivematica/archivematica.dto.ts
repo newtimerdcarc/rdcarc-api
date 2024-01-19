@@ -5,6 +5,9 @@ export class archivematicaDto {
     username: string;
 
     @ApiProperty()
+    apiKey: string;
+
+    @ApiProperty()
     folder: string;
 }
 export class transferStatusDto {

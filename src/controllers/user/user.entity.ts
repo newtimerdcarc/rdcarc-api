@@ -28,6 +28,9 @@ export class User {
   phone: string;
 
   @Column({ default: "" })
+  api_key: string;
+
+  @Column({ default: "" })
   user_archivematica: string;
 
   @Column({ default: true })

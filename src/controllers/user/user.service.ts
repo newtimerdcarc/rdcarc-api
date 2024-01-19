@@ -58,6 +58,8 @@ export class UserService {
     verifyUser.type = user.type || verifyUser.type;
     verifyUser.cpf = user.cpf || verifyUser.cpf;
     verifyUser.phone = user.phone || verifyUser.phone;
+    verifyUser.api_key = user.api_key || verifyUser.api_key;
+    verifyUser.user_archivematica = user.user_archivematica || verifyUser.user_archivematica;
 
     await this.userRepository.update(id, verifyUser);
     return this.findOne(id);

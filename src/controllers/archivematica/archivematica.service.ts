@@ -31,7 +31,7 @@ export class ArchivematicaService {
 
     async transferPackage(body: any): Promise<any> {
         const headers = {
-            Authorization: `ApiKey ${body.username}:${this.apiKey}`,
+            Authorization: `ApiKey ${body.username}:${body.apiKey}`,
             'Content-Type': 'application/json',
         };
 

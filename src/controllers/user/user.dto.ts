@@ -21,6 +21,12 @@ export class UserDto {
 
     @ApiProperty()
     phone: string;
+
+    @ApiProperty()
+    user_archivematica: string;
+
+    @ApiProperty()
+    api_key: string;
 }
 
 export class UpdateUserDto {
@@ -38,6 +44,12 @@ export class UpdateUserDto {
 
     @ApiProperty()
     phone: string;
+
+    @ApiProperty()
+    api_key: string;
+
+    @ApiProperty()
+    user_archivematica: string;
 }
 
 export class UpdatePasswordDto {
