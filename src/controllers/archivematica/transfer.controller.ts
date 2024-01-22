@@ -21,17 +21,16 @@ export class TransferController {
 
     @Get(':user/packages')
     @ApiOperation({ summary: 'BUSCAR TODOS OS PACOTES NO ARCHIVEMATICA' })
-    async getAllPackages(@Param('user') user: string): Promise<any> {
-        return this.archService.getAllPackages(user);
+    async getAllPackages(): Promise<any> {
+        return this.archService.getAllPackages();
     }
 
-    @Get(':user/:id/details')
+    @Get(':id/details')
     @ApiOperation({ summary: 'BUSCAR UM PACOTE ESPECÍFICO' })
     async getFileDetails(
-        @Param('user') user: string,
         @Param('id') id: string
     ): Promise<any> {
-        return this.archService.getFileDetails(user, id);
+        return this.archService.getFileDetails(id);
     }
 
     @Post()

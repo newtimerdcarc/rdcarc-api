@@ -28,12 +28,10 @@ export class ArchivedController {
         return this.archivedService.findOne(uuid);
     }
 
-    @Get(':user')
+    @Get('findUpdate')
     @ApiOperation({ summary: 'ATUALIZA OS ARQUIVADOS NO BANCO DE DADOS' })
-    async findUpdate(
-        @Param('user') user: string,
-    ): Promise<any[]> {
-        return this.archivedService.findUpdate(user);
+    async findUpdate(): Promise<any[]> {
+        return this.archivedService.findUpdate();
     }
 
 }

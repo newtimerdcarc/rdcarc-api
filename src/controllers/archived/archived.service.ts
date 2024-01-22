@@ -43,8 +43,8 @@ export class ArchivedService {
         return file;
     }
 
-    async findUpdate(user: string): Promise<any[]> {
-        const packages = await this.maticaService.getAllPackages(user);
+    async findUpdate(): Promise<any[]> {
+        const packages = await this.maticaService.getAllPackages();
         const arquivados = await this.archivedRepository.find();
 
         const pacotesNaoArquivados = packages.filter(pacote =>

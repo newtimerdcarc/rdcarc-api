@@ -82,9 +82,9 @@ export class ArchivematicaService {
     //     }
     // }
 
-    async getAllPackages(username: string): Promise<any> {
+    async getAllPackages(): Promise<any> {
         const headers = {
-            Authorization: `ApiKey ${username}:${this.apiKey8000}`,
+            Authorization: `ApiKey admin:${this.apiKey8000}`,
         };
         let allPackages = [];
 
@@ -112,9 +112,9 @@ export class ArchivematicaService {
         return response.data;
     }
 
-    async getFileDetails(username: string, uuid: string): Promise<any> {
+    async getFileDetails(uuid: string): Promise<any> {
         const headers = {
-            Authorization: `ApiKey ${username}:${this.apiKey8000}`,
+            Authorization: `ApiKey admin:${this.apiKey8000}`,
         };
 
         try {
