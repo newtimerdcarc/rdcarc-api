@@ -1,11 +1,13 @@
 /* eslint-disable prettier/prettier */
 import { HttpException, HttpStatus, Inject, Injectable, Logger, UnauthorizedException, forwardRef } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
+import * as AWS from 'aws-sdk';
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
 import { PackageService } from '../package/package.service';
 @Injectable()
 export class S3Service {
     private readonly userPool: CognitoUserPool;
+    private cognitoIdentityServiceProvider: AWS.CognitoIdentityServiceProvider;
 
     constructor(
         @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
@@ -15,6 +17,15 @@ export class S3Service {
             ClientId: process.env.COGNITO_CLIENT_ID,
         };
         this.userPool = new CognitoUserPool(poolData);
+
+        const credentials = {
+            accessKeyId: process.env.ACCESS_KEY_ID,
+            secretAccessKey: process.env.SECRET_ACCESS_KEY,
+            region: 'sa-east-1'
+        };
+
+        AWS.config.update(credentials);
+        this.cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
     }
 
     getS3() {
@@ -481,7 +492,6 @@ export class S3Service {
         }
     }
 
-    // REENVIAR CÓDIGO DE CONFIMRAÇÃO
     async resendConfirmationCode(username: string): Promise<any> {
         try {
             // Obtendo o usuário do Amazon Cognito
@@ -597,4 +607,51 @@ export class S3Service {
         }
     }
 
+    async deleteUserInCognito(username: string, password: string): Promise<void> {
+        try {
+            const authenticationDetails = new AuthenticationDetails({
+                Username: username,
+                Password: password,
+            });
+
+            const userData = {
+                Username: username,
+                Pool: this.userPool,
+            };
+
+            const cognitoUser = new CognitoUser(userData);
+            await this.authenticateUser(cognitoUser, authenticationDetails);
+            await this.deleteUserFromCognito(cognitoUser);
+            return;
+        } catch (error) {
+            console.error('Erro ao excluir usuário do Cognito:', error);
+
+            // Verificar se o erro é devido ao usuário não confirmado
+            if (error.code === 'UserNotConfirmedException') {
+                return await this.deleteUnconfirmedUserFromCognito(username);
+            }
+            throw new HttpException('Erro ao excluir usuário do Cognito', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private deleteUserFromCognito(cognitoUser: CognitoUser): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            cognitoUser.deleteUser((err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    async deleteUnconfirmedUserFromCognito(username: string): Promise<void> {
+        const params: AWS.CognitoIdentityServiceProvider.AdminDeleteUserRequest = {
+            UserPoolId: process.env.COGNITO_USER_POOL_ID,
+            Username: username,
+        };
+
+        await this.cognitoIdentityServiceProvider.adminDeleteUser(params).promise();
+    }
 }

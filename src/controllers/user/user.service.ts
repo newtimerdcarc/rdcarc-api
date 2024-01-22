@@ -91,6 +91,7 @@ export class UserService {
       throw new HttpException('Usuário não encontrado', HttpStatus.BAD_REQUEST);
     }
 
+    await this.s3Service.deleteUserInCognito(verifyUser.username, verifyUser.password);
     await this.userRepository.delete(id);
   }
 
