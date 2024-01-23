@@ -6,6 +6,8 @@ import { ArchivematicaModule } from '../archivematica/archivematica.module';
 import { S3Module } from '../s3/s3.module';
 import { ArchivedController } from './archived.controller';
 import { ArchivedService } from './archived.service';
+import { ArchivalService } from './archival.service';
+import { ArchivalProvider } from './archival.provider';
 @Module({
     imports: [
         DatabaseModule,
@@ -14,7 +16,7 @@ import { ArchivedService } from './archived.service';
         forwardRef(() => ArchivematicaModule),
     ],
     controllers: [ArchivedController],
-    providers: [ArchivedService, ...ArchivedProviders],
-    exports: [ArchivedService]
+    providers: [ArchivedService, ArchivalService, ArchivalProvider, ...ArchivedProviders],
+    exports: [ArchivedService, ArchivalService]
 })
 export class ArchivedModule { }

@@ -19,4 +19,20 @@ export const databaseProviders = [
       return dataSource.initialize();
     },
   },
+  {
+    provide: 'ARCHIVEMATICA',
+    useFactory: async () => {
+      const dataSource = new DataSource({
+        type: 'mysql',
+        host: process.env.PG_HOST,
+        port: Number(process.env.PG_PORT),
+        username: process.env.PG_USERNAME,
+        password: process.env.PG_PASSWORD,
+        database: 'archivematica_ss_prod',
+        synchronize: true,
+      });
+
+      return dataSource.initialize();
+    },
+  },
 ];
