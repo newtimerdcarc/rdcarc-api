@@ -23,6 +23,9 @@ export class UserDto {
     phone: string;
 
     @ApiProperty()
+    storage_key: string;
+
+    @ApiProperty()
     user_archivematica: string;
 
     @ApiProperty()
@@ -47,6 +50,9 @@ export class UpdateUserDto {
 
     @ApiProperty()
     api_key: string;
+
+    @ApiProperty()
+    storage_key: string;
 
     @ApiProperty()
     user_archivematica: string;

@@ -20,6 +20,7 @@ export class ArchivematicaService {
     public apiKey8000 = process.env.ARCHIVEMATICA_KEY_8000;
     public path = process.env.ARCHIVEMATICA_UUID_PATH;
     public host = process.env.ARCHIVEMATICA_HOST;
+    public pipeline = process.env.ARCHIVEMATICA_PIPELINE;
 
     async create(body: any): Promise<any> {
         return await this.transferRepository.save(body);
@@ -49,7 +50,7 @@ export class ArchivematicaService {
         try {
             const response = await axios.post(`${this.apiUrl}/v2beta/package`, body, { headers });
             const id = response.data.id;
-            const res = {uuid: id};
+            const res = { uuid: id };
             await new Promise(resolve => setTimeout(resolve, 3000));
             // let res;
             // do {
@@ -119,6 +120,32 @@ export class ArchivematicaService {
 
         try {
             const response = await axios.get(`http://${this.host}:8000/api/v2/file/${uuid}`, { headers });
+            return response.data;
+        } catch (error) {
+            console.error('Erro na chamada HTTP:', error.message);
+            throw error;
+        }
+    }
+
+    async deletePakcage(body: any): Promise<any> {
+        const headers = {
+            Authorization: `ApiKey ${body.username}:${body.storage_key}`,
+            'Content-Type': 'application/json'
+        };
+
+        const deleteBody = {
+            event_reason: body.event_reason,
+            pipeline: this.pipeline,
+            user_id: 1,
+            user_email: body.user_email
+        }
+
+        try {
+            const response = await axios.post(
+                `http://${this.host}:8000/api/v2/file/${body.uuid}/delete_aip/`,
+                deleteBody,
+                { headers }
+            );
             return response.data;
         } catch (error) {
             console.error('Erro na chamada HTTP:', error.message);

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef, NotFoundException } from '@nestjs/common';
 import { Raw, Repository } from 'typeorm';
 import { S3Service } from '../s3/s3.service';
 import { Archived } from './archived.entity';
@@ -93,6 +93,29 @@ export class ArchivedService {
         const semUuid = semExtensao.split('-').slice(2).join('-');
 
         return semUuid;
+    }
+
+    async afterDeletePackage(uuid: any): Promise<any> {
+        await this.archivedRepository.findOne({ where: { uuid } });
+        
+        await this.archivedRepository
+            .createQueryBuilder()
+            .update(Archived)
+            .set({ status: "DELETION REQUESTED" })
+            .where("uuid = :uuid", { uuid })
+            .execute();
+
+        return await this.findOne(uuid);
+    }
+
+    async deletePackage(uuid: string): Promise<void> {
+        const file: any = await this.archivedRepository.findOne({ where: { uuid } });
+
+        if (!file) {
+            throw new NotFoundException('UUID inválido.');
+        }
+
+        await this.archivedRepository.delete(uuid);
     }
 
 

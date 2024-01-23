@@ -1,16 +1,17 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ArchivedService } from './archived.service';
-import { S3Service } from '../s3/s3.service';
+import { deletePackageDto } from '../archivematica/archivematica.dto';
+import { ArchivematicaService } from '../archivematica/archivematica.service';
 @ApiTags('ARQUIVADO')
 @ApiBearerAuth()
 @Controller('archived')
 export class ArchivedController {
     constructor(
         private readonly archivedService: ArchivedService,
-        private readonly s3Service: S3Service
+        private readonly archivematicaService: ArchivematicaService
     ) { }
 
     @UseGuards(JwtAuthGuard)
@@ -32,6 +33,18 @@ export class ArchivedController {
     @ApiOperation({ summary: 'ATUALIZA OS ARQUIVADOS NO BANCO DE DADOS' })
     async findUpdate(): Promise<any[]> {
         return this.archivedService.findUpdate();
+    }
+
+    @Post('delete')
+    @ApiOperation({ summary: 'DELETAR PACOTE' })
+    @ApiBody({ type: deletePackageDto })
+    async create(
+        @Body() body: deletePackageDto,
+    ): Promise<void> {
+        const packageFound = await this.archivematicaService.deletePakcage(body);
+        if (packageFound) {
+            await this.archivedService.afterDeletePackage(body.uuid);
+        }
     }
 
 }

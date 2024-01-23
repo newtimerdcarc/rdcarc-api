@@ -25,3 +25,17 @@ export class filePathDto {
     @ApiProperty()
     folderPath: string;
 }
+
+export class deletePackageDto {
+    @ApiProperty()
+    uuid: string;
+
+    @ApiProperty()
+    username: string;
+
+    @ApiProperty()
+    event_reason: string;
+
+    @ApiProperty()
+    user_email: string;
+}

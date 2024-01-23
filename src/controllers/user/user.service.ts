@@ -59,6 +59,7 @@ export class UserService {
     verifyUser.cpf = user.cpf || verifyUser.cpf;
     verifyUser.phone = user.phone || verifyUser.phone;
     verifyUser.api_key = user.api_key || verifyUser.api_key;
+    verifyUser.storage_key = user.storage_key || verifyUser.storage_key;
     verifyUser.user_archivematica = user.user_archivematica || verifyUser.user_archivematica;
 
     await this.userRepository.update(id, verifyUser);

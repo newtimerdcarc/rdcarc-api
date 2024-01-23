@@ -31,6 +31,9 @@ export class User {
   api_key: string;
 
   @Column({ default: "" })
+  storage_key: string;
+
+  @Column({ default: "" })
   user_archivematica: string;
 
   @Column({ default: true })
