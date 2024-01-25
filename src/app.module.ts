@@ -16,10 +16,23 @@ import { FolderModule } from './controllers/folder/folder.module';
 import { PackageModule } from './controllers/package/package.module';
 import { ArchivematicaModule } from './controllers/archivematica/archivematica.module';
 import { ArchivedModule } from './controllers/archived/archived.module';
+import { EmailController } from './controllers/email/email.controller';
+import { MailerModule } from '@nestjs-modules/mailer';
 dotenv.config();
 @Module({
   imports: [
     S3Module,
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.SES_HOST,
+        port: process.env.SES_PORT,
+        secure: false,
+        auth: {
+          user: process.env.USER_SMTP,
+          pass: process.env.PASSWORD_SMTP
+        }
+      }
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [config]
@@ -37,7 +50,7 @@ dotenv.config();
     ArchivematicaModule,
     ArchivedModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, EmailController],
   providers: [
     AppService,
     AuthService,
