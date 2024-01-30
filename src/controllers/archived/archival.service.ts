@@ -30,15 +30,21 @@ export class ArchivalService {
         }
 
         const files3 = await this.s3Service.getFolderS3(dip[0].current_path);
-        // Filtro para objetos contendo "METS" na Key 
-        const mets = files3.filter(obj => obj.Key.includes("METS"));
-        // Filtro para objetos contendo "processingMCP" na Key
-        const pointer = files3.filter(obj => obj.Key.includes("processingMCP"));
 
-        archiveAip.DIP = dip[0];
-        archiveAip.DIP.files = files3;
-        archiveAip.DIP.mets = mets[0];
-        archiveAip.DIP.pointer = pointer[0];
+        const filterFiles = (keyword: string) => files3.filter(obj => obj.Key.includes(keyword));
+
+        const objeto1 = { name: 'objects', files: filterFiles('objects') };
+        const objeto2 = { name: 'OCRfiles', files: filterFiles('OCRfiles') };
+        const objeto3 = { name: 'thumbnails', files: filterFiles('thumbnails') };
+
+        const newFiles = [objeto1, objeto2, objeto3];
+
+        archiveAip.DIP = {
+            ...dip[0],
+            files: newFiles,
+            mets: filterFiles('METS')[0],
+            pointer: filterFiles('processingMCP')[0],
+        };
 
         return archiveAip;
     }
