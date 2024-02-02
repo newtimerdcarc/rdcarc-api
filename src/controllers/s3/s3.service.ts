@@ -356,6 +356,33 @@ export class S3Service {
         }
     }
 
+    async getSizeTransferFolderS3(folderPath: string): Promise<any> {
+        const bucketS3 = process.env.BUCKET_NAME;
+        const s3 = this.getS3();
+
+        try {
+            // Listar objetos na "pasta"
+            const listParams = {
+                Bucket: bucketS3,
+                Prefix: `${folderPath}`,
+            };
+
+            const objects: any = await s3.listObjectsV2(listParams).promise();
+
+            const objetos = objects.Contents.filter(objeto => objeto.Size > 0);
+
+            // Obter KeyCount e soma do campo Size
+            const keyCount = objects.KeyCount;
+            const totalSize = objetos.reduce((acc, objeto) => acc + objeto.Size, 0);
+
+            return { keyCount, totalSize };
+
+        } catch (err) {
+            console.error('Erro ao obter a pasta no S3:', err);
+            throw err;
+        }
+    }
+
     async getFolderS3(folderPath: string): Promise<any> {
         const bucketS3 = process.env.DIP_BUCKET_NAME;
         const s3 = this.getS3();

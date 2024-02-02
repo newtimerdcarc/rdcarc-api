@@ -32,6 +32,42 @@ export class PackageService {
         return this.packageRepository.find();
     }
 
+    bytesToKB(bytes: number): string {
+        if (bytes < 2 * 1024 * 1024) {
+            // Convertendo para KB
+            return (bytes / 1024).toFixed(2) + ' KB';
+        } else if (bytes < 999 * 1024 * 1024) {
+            // Convertendo para MB
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        } else {
+            // Convertendo para GB
+            return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+    }
+
+    async findWithSize(): Promise<any[]> {
+        const pacotes = await this.packageRepository.find();
+
+        if (pacotes.length < 1) {
+            return pacotes;
+        }
+
+        const packages: any[] = [];
+
+        for (const pacote of pacotes) {
+            const response = await this.s3Service.getSizeTransferFolderS3(pacote.title);
+            pacote.quantity = response.keyCount;
+            const obj = {
+                ...pacote,
+                size: this.bytesToKB(response.totalSize)
+            }
+
+            packages.push(obj);
+        }
+
+        return packages;
+    }
+
     async findOne(id: any): Promise<Package> {
         return await this.packageRepository.findOne({ where: { id } });
     }

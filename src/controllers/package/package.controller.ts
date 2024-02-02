@@ -27,6 +27,13 @@ export class PackageController {
     async findAll(): Promise<Package[]> {
         return this.packageService.findAll();
     }
+    
+    // @UseGuards(JwtAuthGuard)
+    @Get('sizes')
+    @ApiOperation({ summary: 'TODOS PACOTES COM TAMANHO' })
+    async findWithSize(): Promise<any[]> {
+        return this.packageService.findWithSize();
+    }
 
     @UseGuards(JwtAuthGuard)
     @Get(':id')
