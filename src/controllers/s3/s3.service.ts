@@ -4,6 +4,7 @@ import { S3 } from 'aws-sdk';
 import * as AWS from 'aws-sdk';
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
 import { PackageService } from '../package/package.service';
+import { ArchivalService } from '../archived/archival.service';
 @Injectable()
 export class S3Service {
     private readonly userPool: CognitoUserPool;
@@ -11,6 +12,7 @@ export class S3Service {
 
     constructor(
         @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
+        @Inject(forwardRef(() => ArchivalService)) private readonly archivalService: ArchivalService,
     ) {
         const poolData = {
             UserPoolId: process.env.COGNITO_USER_POOL_ID,
@@ -33,6 +35,320 @@ export class S3Service {
             accessKeyId: process.env.ACCESS_KEY_ID,
             secretAccessKey: process.env.SECRET_ACCESS_KEY,
         });
+    }
+
+    async getBucket(bucket: string): Promise<any> {
+        let bucketS3;
+
+        if (bucket === "AIP") {
+            bucketS3 = process.env.AIP_BUCKET_NAME;
+        }
+        else if (bucket === "DIP") {
+            bucketS3 = process.env.DIP_BUCKET_NAME;
+        }
+        else {
+            throw new Error('Bucket inválido.');
+        }
+
+        const s3 = this.getS3();
+
+        try {
+            const listParams = {
+                Bucket: bucketS3
+            };
+
+            const objects: any = await s3.listObjectsV2(listParams).promise();
+            return objects;
+
+        } catch (err) {
+            console.error('Erro ao obter o bucket S3:', err);
+            throw err;
+        }
+    }
+
+    generateRandomColor(previousColors: string[]): string {
+        const letters = "0123456789ABCDEF";
+        let color: string;
+        do {
+            color = "#";
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+        } while (previousColors.includes(color));
+        return color;
+    }
+
+    generateRandomColors(quantity: number): string[] {
+        const colors: string[] = [];
+        for (let i = 0; i < quantity; i++) {
+            colors.push(this.generateRandomColor(colors));
+        }
+        return colors;
+    }
+
+    async dashboardStats(bucket_name: string): Promise<any> {
+        const bucket: any = await this.getBucket(bucket_name);
+        const archivematica = await this.archivalService.findAll();
+
+        const typeFiles1 = await this.getStatusArchivematica(bucket_name, archivematica);
+        const labels1 = typeFiles1.map((typeFile: any) => typeFile.status);
+        const qtds1 = typeFiles1.map((typeFile: any) => typeFile.qtd);
+        const backgroundColor1 = this.generateRandomColors(labels1.length);
+        const hoverBackgroundColor1 = this.generateRandomColors(labels1.length);
+
+        const typeFiles2 = await this.getSumSizeStatusArchivematica(bucket_name, archivematica);
+        const labels2 = typeFiles2.map((typeFile: any) => typeFile.status);
+        const qtds2 = typeFiles2.map((typeFile: any) => typeFile.qtd);
+        const backgroundColor2 = this.generateRandomColors(labels2.length);
+        const hoverBackgroundColor2 = this.generateRandomColors(labels2.length);
+
+        const typeFiles3 = await this.getTypeFiles(bucket);
+        const labels3 = typeFiles3.map((typeFile: any) => typeFile.type);
+        const qtds3 = typeFiles3.map((typeFile: any) => typeFile.qtd);
+        const backgroundColor3 = this.generateRandomColors(labels3.length);
+        const hoverBackgroundColor3 = this.generateRandomColors(labels3.length);
+
+        const qtdFilesPerStatus = {
+            labels: labels1,
+            datasets: [
+                {
+                    data: qtds1,
+                    backgroundColor: backgroundColor1,
+                    hoverBackgroundColor: hoverBackgroundColor1
+                }
+            ]
+        };
+        const qtdDataPerStatus = {
+            labels: labels2,
+            datasets: [
+                {
+                    data: qtds2,
+                    backgroundColor: backgroundColor2,
+                    hoverBackgroundColor: hoverBackgroundColor2
+                }
+            ]
+        };
+        const typeFiles = {
+            labels: labels3,
+            datasets: [
+                {
+                    data: qtds3,
+                    backgroundColor: backgroundColor3,
+                    hoverBackgroundColor: hoverBackgroundColor3
+                }
+            ]
+        };
+
+        const stats = {
+            qtdData: await this.getSumSizes(bucket),
+            qtdDataLastWeek: await this.getSumSizesLastWeek(bucket),
+            qtdDataLastMonth: await this.getSumSizesLastMonth(bucket),
+            qtdDataLastYear: await this.getSumSizesLastYear(bucket),
+
+            qtdFiles: await this.getQtdFiles(bucket),
+            qtdFilesLastWeek: await this.getQtdLastWeek(bucket),
+            qtdFilesLastMonth: await this.getQtdSizesLastMonth(bucket),
+            qtdFilesLastYear: await this.getQtdSizesLastYear(bucket),
+
+            qtdDataPerStatus,
+            qtdFilesPerStatus,
+            typeFiles
+        }
+
+        return stats;
+    }
+
+    async getSumSizes(bucket: any): Promise<any> {
+        // const bucket: any = await this.getBucket();
+        if (bucket.Contents && Array.isArray(bucket.Contents)) {
+            const somaSizes = bucket.Contents.reduce((soma, item) => soma + item.Size, 0);
+            return this.bytesToKB(somaSizes);
+        } else {
+            return "0 KB";
+        }
+    }
+
+    async getSumSizesLastWeek(bucket: any): Promise<any> {
+        if (bucket.Contents && Array.isArray(bucket.Contents)) {
+            const dataAtual = new Date();
+            const seteDiasAtras = new Date(dataAtual);
+            seteDiasAtras.setDate(dataAtual.getDate() - 7);
+
+            // Filtra os itens cuja data de modificação está na última semana
+            const itensUltimaSemana = bucket.Contents.filter(
+                item => new Date(item.LastModified) >= seteDiasAtras && new Date(item.LastModified) <= dataAtual
+            );
+
+            // Calcula a soma dos tamanhos desses itens
+            const somaSizes = itensUltimaSemana.reduce((soma, item) => soma + item.Size, 0);
+
+            return this.bytesToKB(somaSizes);
+        } else {
+            return "0 KB";
+        }
+    }
+
+    async getSumSizesLastMonth(bucket: any): Promise<any> {
+        if (bucket.Contents && Array.isArray(bucket.Contents)) {
+            const dataAtual = new Date();
+            const primeiroDiaMesAtual = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1);
+            const primeiroDiaMesAnterior = new Date(primeiroDiaMesAtual);
+            primeiroDiaMesAnterior.setMonth(primeiroDiaMesAtual.getMonth() - 1);
+
+            // Filtra os itens cuja data de modificação está no mês anterior
+            const itensMesAnterior = bucket.Contents.filter(
+                item => new Date(item.LastModified) >= primeiroDiaMesAnterior && new Date(item.LastModified) < primeiroDiaMesAtual
+            );
+
+            // Calcula a soma dos tamanhos desses itens
+            const somaSizes = itensMesAnterior.reduce((soma, item) => soma + item.Size, 0);
+
+            return this.bytesToKB(somaSizes);
+        } else {
+            return "0 KB";
+        }
+    }
+
+    async getSumSizesLastYear(bucket: any): Promise<any> {
+        if (bucket.Contents && Array.isArray(bucket.Contents)) {
+            const dataAtual = new Date();
+            const primeiroDiaAnoAtual = new Date(dataAtual.getFullYear(), 0, 1);
+            const primeiroDiaAnoPassado = new Date(primeiroDiaAnoAtual);
+            primeiroDiaAnoPassado.setFullYear(primeiroDiaAnoAtual.getFullYear() - 1);
+
+            // Filtra os itens cuja data de modificação está no ano passado
+            const itensAnoPassado = bucket.Contents.filter(
+                item => new Date(item.LastModified) >= primeiroDiaAnoPassado && new Date(item.LastModified) < primeiroDiaAnoAtual
+            );
+
+            // Calcula a soma dos tamanhos desses itens
+            const somaSizes = itensAnoPassado.reduce((soma, item) => soma + item.Size, 0);
+
+            return this.bytesToKB(somaSizes);
+        } else {
+            return "0 KB";
+        }
+    }
+
+    bytesToKB(bytes: number): string {
+        if (bytes < 2 * 1024 * 1024) {
+            return (bytes / 1024).toFixed(2) + ' KB';
+        } else if (bytes < 999 * 1024 * 1024) {
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        } else {
+            return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+    }
+
+    bytesToMB(bytes: number): number {
+        return Math.round((bytes / (1024 * 1024)) * 100) / 100;
+    }
+
+    async getQtdFiles(objects: any): Promise<number> {
+        const bucket = objects.Contents.filter(objeto => objeto.Size > 0);
+        if (bucket && Array.isArray(bucket)) {
+            return bucket.length;
+        } else {
+            return 0;
+        }
+    }
+
+    async getQtdLastWeek(objects: any): Promise<number> {
+        const bucket = objects.Contents.filter(objeto => objeto.Size > 0);
+
+        if (bucket && Array.isArray(bucket)) {
+            const dataAtual = new Date();
+            const seteDiasAtras = new Date(dataAtual);
+            seteDiasAtras.setDate(dataAtual.getDate() - 7);
+            const itensUltimos7Dias = bucket.filter(
+                item => new Date(item.LastModified) >= seteDiasAtras
+            );
+            return itensUltimos7Dias.length;
+        } else {
+            return 0;
+        }
+    }
+
+    async getQtdSizesLastMonth(objects: any): Promise<number> {
+        const bucket = objects.Contents.filter(objeto => objeto.Size > 0);
+
+        if (bucket && Array.isArray(bucket)) {
+            const dataAtual = new Date();
+            const primeiroDiaMesAtual = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1);
+            const primeiroDiaMesAnterior = new Date(primeiroDiaMesAtual);
+            primeiroDiaMesAnterior.setMonth(primeiroDiaMesAtual.getMonth() - 1);
+            const itensMesAnterior = bucket.filter(
+                item => new Date(item.LastModified) >= primeiroDiaMesAnterior && new Date(item.LastModified) < primeiroDiaMesAtual
+            );
+            return itensMesAnterior.length;
+        } else {
+            return 0;
+        }
+    }
+
+    async getQtdSizesLastYear(objects: any): Promise<number> {
+        const bucket = objects.Contents.filter(objeto => objeto.Size > 0);
+
+        if (bucket && Array.isArray(bucket)) {
+            const dataAtual = new Date();
+            const primeiroDiaAnoAtual = new Date(dataAtual.getFullYear(), 0, 1);
+            const primeiroDiaAnoPassado = new Date(primeiroDiaAnoAtual);
+            primeiroDiaAnoPassado.setFullYear(primeiroDiaAnoAtual.getFullYear() - 1);
+            const itensAnoPassado = bucket.filter(
+                item => new Date(item.LastModified) >= primeiroDiaAnoPassado && new Date(item.LastModified) < primeiroDiaAnoAtual
+            );
+
+            return itensAnoPassado.length;
+        } else {
+            return 0;
+        }
+    }
+
+    async getTypeFiles(objects: any): Promise<any[]> {
+        const bucket = objects.Contents.filter(objeto => objeto.Size > 0);
+        const tiposContagem: { [key: string]: number } = {};
+        if (bucket && Array.isArray(bucket)) {
+            bucket.forEach(item => {
+                const extensao = item.Key.split('.').pop();
+                tiposContagem[extensao] = (tiposContagem[extensao] || 0) + 1;
+            });
+            const tiposArray = Object.entries(tiposContagem).map(([type, qtd]) => ({ type, qtd }));
+            return tiposArray;
+        } else {
+            return [];
+        }
+    }
+
+    async getStatusArchivematica(type: string, objects: any): Promise<any[]> {
+        const bucket = objects.filter(objeto => objeto.package_type === type);
+        const tiposContagem: { [key: string]: number } = {};
+        if (bucket && Array.isArray(bucket)) {
+            bucket.forEach(item => {
+                tiposContagem[item.status] = (tiposContagem[item.status] || 0) + 1;
+            });
+            const tiposArray = Object.entries(tiposContagem).map(([status, qtd]) => ({ status, qtd }));
+            return tiposArray;
+        } else {
+            return [];
+        }
+    }
+
+    async getSumSizeStatusArchivematica(type: string, objects: any): Promise<any[]> {
+        const bucket = objects.filter(objeto => objeto.package_type === type);
+        const tiposContagem: { [key: string]: number } = {};
+        if (bucket && Array.isArray(bucket)) {
+            bucket.forEach(item => {
+                tiposContagem[item.status] = (tiposContagem[item.status] || 0) + Number(item.size);
+            });
+            const tiposArray = Object.entries(tiposContagem).map(([status, qtd]) => ({ status, qtd }));
+            // Convertendo as quantidades para megabytes
+            tiposArray.forEach(item => {
+                item.qtd = this.bytesToMB(item.qtd);
+            });
+            return tiposArray;
+        } else {
+            return [];
+        }
     }
 
     async upload(file, folder): Promise<string> {

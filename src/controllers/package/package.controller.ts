@@ -5,11 +5,15 @@ import { Package } from './package.entity';
 import { PackageDto } from './package.dto';
 import { PackageService } from './package.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { S3Service } from '../s3/s3.service';
 @ApiTags('PACOTE')
 @ApiBearerAuth()
 @Controller('package')
 export class PackageController {
-    constructor(private readonly packageService: PackageService) { }
+    constructor(
+        private readonly packageService: PackageService,
+        private readonly s3Service: S3Service
+    ) { }
 
     @UseGuards(JwtAuthGuard)
     @Post()
@@ -27,12 +31,28 @@ export class PackageController {
     async findAll(): Promise<Package[]> {
         return this.packageService.findAll();
     }
-    
-    // @UseGuards(JwtAuthGuard)
+
+    @UseGuards(JwtAuthGuard)
     @Get('sizes')
     @ApiOperation({ summary: 'TODOS PACOTES COM TAMANHO' })
     async findWithSize(): Promise<any[]> {
         return this.packageService.findWithSize();
+    }
+
+    // @UseGuards(JwtAuthGuard)
+    // @Get('transfer')
+    // @ApiOperation({ summary: 'BUCKET DE TRANSFERENCIAS' })
+    // async transferBucket(): Promise<any[]> {
+    //     return this.s3Service.getBucket();
+    // }
+
+    // @UseGuards(JwtAuthGuard)
+    @Get('transfer/:bucket')
+    @ApiOperation({ summary: 'DASHBOARD STATS' })
+    async teste(
+        @Param('bucket') bucket: string
+    ): Promise<any> {
+        return this.s3Service.dashboardStats(bucket);
     }
 
     @UseGuards(JwtAuthGuard)

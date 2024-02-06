@@ -1,12 +1,12 @@
 /* eslint-disable prettier/prettier */
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class ArchivalService {
     constructor(
         @Inject('LOCATIONS_PACKAGE_REPOSITORY') private readonly locationsPackageRepository: any,
-        private readonly s3Service: S3Service
+        @Inject(forwardRef(() => S3Service)) private readonly s3Service: S3Service,
     ) { }
 
     async findAll(): Promise<any[]> {

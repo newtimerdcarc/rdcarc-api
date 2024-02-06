@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ArchivedService } from './archived.service';
 import { deletePackageDto } from '../archivematica/archivematica.dto';
 import { ArchivematicaService } from '../archivematica/archivematica.service';
 import { ArchivalService } from './archival.service';
@@ -11,35 +10,12 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @Controller('archived')
 export class ArchivedController {
     constructor(
-        private readonly archivedService: ArchivedService,
         private readonly archivematicaService: ArchivematicaService,
         private readonly archivalService: ArchivalService
     ) { }
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    @ApiOperation({ summary: 'RETORNA TODOS ARQUIVOS' })
-    async basicFindAll(): Promise<any[]> {
-        return this.archivedService.basicFindAll();
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Get(':uuid/one')
-    @ApiOperation({ summary: 'RETORNA APENAS UM ARQUIVADO' })
-    async findOne(
-        @Param('uuid') uuid: string,
-    ): Promise<any[]> {
-        return this.archivedService.findOne(uuid);
-    }
-
-    @Get('findUpdate')
-    @ApiOperation({ summary: 'ATUALIZA OS ARQUIVADOS NO BANCO DE DADOS' })
-    async findUpdate(): Promise<any[]> {
-        return this.archivedService.findUpdate();
-    }
-
     //ARCHIVAL STORAGE
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get('archival')
     @ApiOperation({ summary: 'RETORNA TODOS PACOTES DO ARCHIVAL STORAGE' })
     async findAll(): Promise<any[]> {

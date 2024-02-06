@@ -12,7 +12,6 @@ import { ArchivalProvider } from './archival.provider';
     imports: [
         DatabaseModule,
         forwardRef(() => S3Module),
-        // forwardRef(() => FolderModule),
         forwardRef(() => ArchivematicaModule),
     ],
     controllers: [ArchivedController],
