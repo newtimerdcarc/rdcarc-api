@@ -15,7 +15,7 @@ export class ArchivedController {
     ) { }
 
     //ARCHIVAL STORAGE
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get('archival')
     @ApiOperation({ summary: 'RETORNA TODOS PACOTES DO ARCHIVAL STORAGE' })
     async findAll(): Promise<any[]> {

@@ -39,14 +39,7 @@ export class PackageController {
         return this.packageService.findWithSize();
     }
 
-    // @UseGuards(JwtAuthGuard)
-    // @Get('transfer')
-    // @ApiOperation({ summary: 'BUCKET DE TRANSFERENCIAS' })
-    // async transferBucket(): Promise<any[]> {
-    //     return this.s3Service.getBucket();
-    // }
-
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get('transfer/:bucket')
     @ApiOperation({ summary: 'DASHBOARD STATS' })
     async teste(

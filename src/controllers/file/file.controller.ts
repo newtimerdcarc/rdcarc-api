@@ -16,7 +16,6 @@ export class FileController {
         private readonly s3Service: S3Service
     ) { }
 
-    // @UseGuards(JwtAuthGuard)
     @Post(':id')
     @ApiBody({ type: FileDto })
     @ApiConsumes('multipart/form-data')
