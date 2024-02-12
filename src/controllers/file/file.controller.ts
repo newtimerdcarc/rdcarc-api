@@ -29,7 +29,7 @@ export class FileController {
         return this.fileService.create(file, body.path, body.creator, id);
     }
 
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get()
     @ApiOperation({ summary: 'TODOS ARQUIVOS' })
     async findAll(): Promise<File[]> {
@@ -60,12 +60,18 @@ export class FileController {
         return this.fileService.update(id, body);
     }
 
+    @Delete()
+    @ApiOperation({ summary: 'DELETAR TODOS OS ARQUIVOS DO BANCO DE DADOS' })
+    async deletarTodos(): Promise<void> {
+        this.fileService.deletarTodos();
+    }
+
     @Delete('aws/:path')
     @ApiOperation({ summary: 'DELETAR PASTA AWS' })
     async deleteFolderS3(
         @Param('path') path: string,
     ): Promise<void> {
-        await this.s3Service.deleteFolderS3(path);
+        this.s3Service.deleteFolderS3(path);
     }
 
     @Delete(':id')

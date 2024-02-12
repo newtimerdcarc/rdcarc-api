@@ -14,6 +14,17 @@ export class FolderDto {
     origin: string;
 }
 
+export class UploadFolderPackageDto {
+    @ApiProperty()
+    titles: string[];
+
+    @ApiProperty()
+    package: string;
+
+    @ApiProperty()
+    package_name: string;
+}
+
 export class UpdateTitleDto {
     @ApiProperty()
     title: string;

@@ -52,7 +52,6 @@ export class FileService {
     async create(file: Express.Multer.File, path: string, creator: string, insertTo: string): Promise<any> {
         const nameWithoutExtension = file.originalname.slice(0, file.originalname.lastIndexOf('.'));
         // Realiza o upload e retorna uma url
-        // const url = ""
         const url = await this.s3Service.upload(file, path);
 
         const arquivo: File = {
@@ -79,6 +78,7 @@ export class FileService {
 
         // Cria o arquivo
         const newFile = await this.fileRepository.save(arquivo);
+
         // Verifica id passado como parametro
         const isFolder = await this.folderService.findOne(insertTo);
         const isPackage = await this.packageService.findOne(insertTo);
@@ -171,6 +171,10 @@ export class FileService {
     // Utilizar para remover todas
     async deletar(id: string): Promise<void> {
         await this.fileRepository.delete(id);
+    }
+
+    async deletarTodos(): Promise<void> {
+        await this.fileRepository.clear();
     }
 
 }
