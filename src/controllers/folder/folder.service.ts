@@ -47,6 +47,7 @@ export class FolderService {
         return segmentos.pop();
     }
 
+    // Utilizado para criação de uma folder dentro de um package
     async createFolderInPackage(body: any): Promise<any[]> {
         return await new Promise(async (resolve) => {
             const { titles, package: packageId, package_name } = body;
@@ -123,6 +124,69 @@ export class FolderService {
             result.push(aux);
         }
         return result;
+    }
+
+    // Utilizado para criação de uma folder dentro de uma folder
+    async createFolderInFolder(body: any): Promise<any[]> {
+        return await new Promise(async (resolve) => {
+            const { titles, packageId, folder_id } = body;
+            const createdFolders: any = [];
+
+            const createFolderRecursive = async (titles: string[], parentId?: string) => {
+                if (titles.length === 0) {
+                    return;
+                }
+
+                const anterior = await this.findOne(parentId);
+                const title = titles.shift(); // Remove e retorna o primeiro elemento do array
+                const folder = new Folder();
+                folder.title = this.obterUltimoSegmento(title);
+                folder.package = packageId;
+                folder.origin = anterior.id;
+                folder.path = `${anterior.path}/${anterior.title}`;
+                folder.date = { year: new Date().getFullYear(), month: new Date().getMonth() + 1, day: new Date().getDate() };
+                folder.folders = [];
+                folder.files = [];
+
+                const newFolder = await this.folderRepository.save(folder);
+                createdFolders.push(newFolder);
+                // Se ainda houver títulos, chama recursivamente
+                if (titles.length > 0) {
+                    await createFolderRecursive(titles, newFolder.id); // Corrigido: Passa o ID da nova pasta como parentId
+                }
+            };
+
+            // Cria a primeira pasta
+
+            const folderFather = await this.findOne(folder_id);
+            if(!folderFather) {
+                throw new NotFoundException('Pasta não encontrada');
+            }
+            const firstTitle = titles.shift(); // Remove e retorna o primeiro elemento do array
+            const firstFolder = new Folder();
+            firstFolder.title = firstTitle;
+            firstFolder.package = packageId;
+            firstFolder.origin = folder_id; // A origem da primeira pasta é o próprio pacote
+            firstFolder.path = `${folderFather.path}/${folderFather.title}`;
+            firstFolder.date = { year: new Date().getFullYear(), month: new Date().getMonth() + 1, day: new Date().getDate() };
+            firstFolder.folders = [];
+            firstFolder.files = [];
+            const firstNewFolder = await this.folderRepository.save(firstFolder);
+            createdFolders.push(firstNewFolder);
+
+            // Chama a função recursiva para criar as pastas restantes
+            await createFolderRecursive([...titles], firstNewFolder.id);
+
+            const ids = createdFolders.map(folder => folder.id);
+
+            for (const folder of createdFolders) {
+                await this.addFolderToFolder(folder.origin, folder.id);
+            }
+
+            const response = await this.findIds(ids);
+
+            resolve(response);
+        });
     }
 
     async findAll(): Promise<Folder[]> {

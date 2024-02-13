@@ -25,6 +25,17 @@ export class UploadFolderPackageDto {
     package_name: string;
 }
 
+export class UploadFolderInFolderDto {
+    @ApiProperty()
+    titles: string[];
+
+    @ApiProperty()
+    package_id: string;
+
+    @ApiProperty()
+    folder_id: string;
+}
+
 export class UpdateTitleDto {
     @ApiProperty()
     title: string;

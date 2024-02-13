@@ -2,7 +2,7 @@
 import { Controller, Get, Post, Body, Param, Delete, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Folder } from './folder.entity';
-import { FolderDto, UpdateTitleDto, UploadFolderPackageDto } from './folder.dto';
+import { FolderDto, UpdateTitleDto, UploadFolderInFolderDto, UploadFolderPackageDto } from './folder.dto';
 import { FolderService } from './folder.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @ApiTags('PASTA')
@@ -29,6 +29,16 @@ export class FolderController {
         @Body() body: UploadFolderPackageDto,
     ): Promise<any[]> {
         return await this.folderService.createFolderInPackage(body);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('folders')
+    @ApiOperation({ summary: 'CRIAR PASTAS ATRAVÉS DO UPLOAD DE ARQUIVOS DENTRO DE UMA PASTA' })
+    @ApiBody({ type: UploadFolderInFolderDto })
+    async createFolderInFolder(
+        @Body() body: UploadFolderInFolderDto,
+    ): Promise<any[]> {
+        return await this.folderService.createFolderInFolder(body);
     }
 
     // @UseGuards(JwtAuthGuard)
