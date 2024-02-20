@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Res, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { archivematicaDto, filePathDto, filenameUrlDto } from '../archivematica/archivematica.dto';
 import { ArchivematicaService } from '../archivematica/archivematica.service';
@@ -17,6 +18,22 @@ export class TransferController {
     @ApiOperation({ summary: 'TODOS TRANSFERS REALIZADOS' })
     async findAll(): Promise<any[]> {
         return this.archService.findAll();
+    }
+
+    @Get(':uuid/download')
+    @ApiOperation({ summary: 'DOWNLOAD DO ARQUIVO AIP' })
+    async downloadFile(@Param('uuid') uuid: string, @Res() res: Response) {
+        try {
+            const fileStream = await this.archService.zipAipDownload(uuid);
+            Object.keys(fileStream.headers).forEach(key => {
+                res.setHeader(key, fileStream.headers[key]);
+            });
+
+            fileStream.pipe(res);
+
+        } catch (error) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Erro ao baixar o arquivo.');
+        }
     }
 
     @Get(':user/packages')

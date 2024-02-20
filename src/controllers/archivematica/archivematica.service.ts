@@ -30,6 +30,19 @@ export class ArchivematicaService {
         return this.transferRepository.find();
     }
 
+    async zipAipDownload(uuid: string) {
+        try {
+            const url = `http://${this.host}:8000/api/v2/file/${uuid}/download`;
+            const headers = {
+                Authorization: `ApiKey admin:${this.apiKey8000}`
+            };
+            const response = await axios.get(url, { headers, responseType: 'stream' });
+            return response.data;
+        } catch (error) {
+            throw new Error('Erro ao baixar o arquivo.');
+        }
+    }
+
     async transferPackage(body: any): Promise<any> {
         const headers = {
             Authorization: `ApiKey ${body.username}:${body.apiKey}`,
