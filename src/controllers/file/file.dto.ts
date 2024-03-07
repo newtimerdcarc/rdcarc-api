@@ -6,6 +6,9 @@ export class FileDto {
     file: string
 
     @ApiProperty()
+    package: string;
+
+    @ApiProperty()
     path: string;
     
     @ApiProperty()
@@ -15,6 +18,9 @@ export class FileDto {
 export class UpdateFileDto {
     @ApiProperty()
     title: string;
+
+    @ApiProperty()
+    subject: string;
 
     @ApiProperty()
     description: string;

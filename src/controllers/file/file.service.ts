@@ -49,7 +49,7 @@ export class FileService {
         return await this.fileRepository.save(file);
     }
 
-    async create(file: Express.Multer.File, path: string, creator: string, insertTo: string): Promise<any> {
+    async create(file: Express.Multer.File, package_id: string, path: string, creator: string, insertTo: string): Promise<any> {
         const nameWithoutExtension = file.originalname.slice(0, file.originalname.lastIndexOf('.'));
         // Realiza o upload e retorna uma url
         const url = await this.s3Service.upload(file, path);
@@ -63,7 +63,9 @@ export class FileService {
             type: this.removeFilePrefix(file.mimetype),
             description: "",
             creator,
+            package: package_id,
             resolution: "",
+            subject: "",
             contributor: "",
             coverage: "",
             format: "",
@@ -98,6 +100,19 @@ export class FileService {
 
     async findAll(): Promise<File[]> {
         return this.fileRepository.find();
+    }
+
+    async findByPackage(package_id: string): Promise<File[]> {
+        return this.fileRepository.find({ where: { package: package_id } });
+    }
+
+    async uploadXmls(package_id): Promise<void> {
+        const files = await this.findByPackage(package_id);
+        if (files.length > 0) {
+            for (const xml of files) {
+                await this.s3Service.uploadXmlToS3(xml);
+            }
+        }
     }
 
     async findConatainsPath(olderPath: string): Promise<File[]> {

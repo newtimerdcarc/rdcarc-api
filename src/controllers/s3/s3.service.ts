@@ -5,6 +5,7 @@ import * as AWS from 'aws-sdk';
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
 import { PackageService } from '../package/package.service';
 import { ArchivalService } from '../archived/archival.service';
+import { FileService } from '../file/file.service';
 @Injectable()
 export class S3Service {
     private readonly userPool: CognitoUserPool;
@@ -13,6 +14,7 @@ export class S3Service {
     constructor(
         @Inject(forwardRef(() => PackageService)) private readonly packageService: PackageService,
         @Inject(forwardRef(() => ArchivalService)) private readonly archivalService: ArchivalService,
+        @Inject(forwardRef(() => FileService)) private readonly fileService: FileService
     ) {
         const poolData = {
             UserPoolId: process.env.COGNITO_USER_POOL_ID,
@@ -348,6 +350,50 @@ export class S3Service {
             return tiposArray;
         } else {
             return [];
+        }
+    }
+
+    private removeS3UrlPrefix(url: string): string {
+        let resultado = url.replace("https://transfersource-prod.s3.sa-east-1.amazonaws.com/", "");
+        resultado = resultado.replace(/\.[^/.]+$/, ".xml");
+        return resultado;
+    }
+
+    async uploadXmlToS3(file: any): Promise<void> {
+        const s3 = this.getS3();
+        const xmlContent = `
+        <?xml version="1.0" encoding="UTF-8"?>
+    <metadata>
+        <contributor>${file.contributor}</contributor>
+        <coverage>${file.coverage}</coverage>
+        <creator>${file.creator}</creator>
+        <date>2023-03-23</date>
+        <description>${file.description}</description>
+        <format>${file.format}</format>
+        <identifier>${file.identifier}</identifier>
+        <language>${file.language}</language>
+        <publisher>${file.publisher}</publisher>
+        <relation>${file.relation}</relation>
+        <rights>${file.rights}</rights>
+        <source>${file.source}</source>
+        <subject>${file.subject}</subject>
+        <title>${file.title}</title>
+        <type>${file.type}</type>
+    </metadata>`
+
+        const path = this.removeS3UrlPrefix(file.url);
+
+        const params: S3.PutObjectRequest = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: path,
+            Body: xmlContent,
+            ContentType: 'text/xml'
+        };
+
+        try {
+            await s3.putObject(params).promise();
+        } catch (error) {
+            throw error;
         }
     }
 

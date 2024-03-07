@@ -30,6 +30,10 @@ export class ArchivematicaService {
         return this.transferRepository.find();
     }
 
+    async deleteAll(): Promise<void> {
+        await this.transferRepository.clear();
+    }
+
     async zipAipDownload(uuid: string) {
         try {
             const url = `http://${this.host}:8000/api/v2/file/${uuid}/download`;
@@ -65,15 +69,9 @@ export class ArchivematicaService {
             const id = response.data.id;
             const res = { uuid: id };
             await new Promise(resolve => setTimeout(resolve, 3000));
-            // let res;
-            // do {
-            //     res = await this.transferStatus(body.username, id);
-            //     res.user = body.username;
-            //     // await new Promise(resolve => setTimeout(resolve, 1000)); // Pausa por 1 segundo antes de verificar novamente
-            // } while (res.status !== 'COMPLETE');
 
-            // await this.create(res);
             await this.s3Service.deleteFolderS3(body.folder);
+
             return res;
         } catch (error) {
             console.error('Erro na chamada HTTP:', error.message);
@@ -81,20 +79,20 @@ export class ArchivematicaService {
         }
     }
 
-    // async transferStatus(username: string, uuid: string): Promise<any> {
-    //     const headers = {
-    //         Authorization: `ApiKey ${username}:${this.apiKey}`,
-    //         Host: this.host
-    //     };
+    async transferStatus(username: string, key: string, uuid: string): Promise<any> {
+        const headers = {
+            Authorization: `ApiKey ${username}:${key}`,
+            Host: this.host
+        };
 
-    //     try {
-    //         const response = await axios.get(`${this.apiUrl}/transfer/status/${uuid}`, { headers });
-    //         return response.data;
-    //     } catch (error) {
-    //         console.error('Erro na chamada HTTP:', error.message);
-    //         throw error;
-    //     }
-    // }
+        try {
+            const response = await axios.get(`${this.apiUrl}/transfer/status/${uuid}`, { headers });
+            return response.data;
+        } catch (error) {
+            console.error('Erro na chamada HTTP:', error.message);
+            throw error;
+        }
+    }
 
     async getAllPackages(): Promise<any> {
         const headers = {

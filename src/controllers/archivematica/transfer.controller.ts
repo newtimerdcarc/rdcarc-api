@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, Param, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Res, HttpStatus, Delete } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { archivematicaDto, filePathDto, filenameUrlDto } from '../archivematica/archivematica.dto';
@@ -18,6 +18,11 @@ export class TransferController {
     @ApiOperation({ summary: 'TODOS TRANSFERS REALIZADOS' })
     async findAll(): Promise<any[]> {
         return this.archService.findAll();
+    }
+
+    @Delete()
+    async deleteAll(): Promise<void> {
+        this.archService.deleteAll();
     }
 
     @Get(':uuid/download')

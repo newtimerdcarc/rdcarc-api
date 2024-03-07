@@ -18,8 +18,14 @@ export class File {
     @Column()
     creator: string;
 
+    @Column()
+    package: string;
+
     @Column('json')
     date: { year: number, month: number, day: number };
+
+    @Column()
+    subject: string;
 
     @Column()
     type: string;

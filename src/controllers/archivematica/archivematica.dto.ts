@@ -2,6 +2,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 export class archivematicaDto {
     @ApiProperty()
+    user: string;
+
+    @ApiProperty()
     username: string;
 
     @ApiProperty()

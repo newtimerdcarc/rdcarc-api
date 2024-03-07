@@ -25,7 +25,7 @@ export class PackageController {
         return this.packageService.create(body);
     }
 
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get()
     @ApiOperation({ summary: 'TODOS PACOTES' })
     async findAll(): Promise<Package[]> {

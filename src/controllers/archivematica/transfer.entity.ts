@@ -32,4 +32,7 @@ export class Transfer {
 
     @Column()
     message: string;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', nullable: false })
+    transfer_date: Date;
 }

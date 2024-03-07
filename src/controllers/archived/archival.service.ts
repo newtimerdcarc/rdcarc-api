@@ -14,6 +14,11 @@ export class ArchivalService {
         return this.locationsPackageRepository.query(query);
     }
 
+    // async findAllTransfers(): Promise<any[]> {
+    //     const query = 'SELECT * FROM Transfers';
+    //     return this.locationsPackageRepository.query(query);
+    // }
+
     async findOne(uuid: string): Promise<any> {
         const archiveAip = await this.findByUUID(uuid);
 

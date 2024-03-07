@@ -16,6 +16,7 @@ import { FolderModule } from './controllers/folder/folder.module';
 import { PackageModule } from './controllers/package/package.module';
 import { ArchivematicaModule } from './controllers/archivematica/archivematica.module';
 import { ArchivedModule } from './controllers/archived/archived.module';
+import { TransferBdModule } from './controllers/transfer/transfer-bd.module';
 import { EmailController } from './controllers/email/email.controller';
 import { MailerModule } from '@nestjs-modules/mailer';
 dotenv.config();
@@ -49,6 +50,7 @@ dotenv.config();
     PackageModule,
     ArchivematicaModule,
     ArchivedModule,
+    TransferBdModule,
   ],
   controllers: [AppController, EmailController],
   providers: [
