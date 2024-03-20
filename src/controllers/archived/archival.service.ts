@@ -89,17 +89,17 @@ export class ArchivalService {
     }
 
     async findAIPPackages(): Promise<any[]> {
-        const query = 'SELECT * FROM locations_package WHERE package_type = "AIP" ORDER BY stored_date DESC';
+        const query = 'SELECT * FROM locations_package WHERE package_type = "AIP" ORDER BY `stored_date` desc';
         return this.locationsPackageRepository.query(query);
     }
 
     async findPackagesUploaded(): Promise<any[]> {
-        const query = 'SELECT * FROM locations_package WHERE package_type = "AIP" AND status = "UPLOADED"';
+        const query = 'SELECT * FROM locations_package WHERE package_type = "AIP" AND status = "UPLOADED" ORDER BY `stored_date` desc';
         return this.locationsPackageRepository.query(query);
     }
 
     async findPackagesDeleted(): Promise<any[]> {
-        const query = 'SELECT * FROM locations_package WHERE package_type = "AIP" AND status = "DELETED"';
+        const query = 'SELECT * FROM locations_package WHERE package_type = "AIP" AND status = "DELETED" ORDER BY `stored_date` desc';
         return this.locationsPackageRepository.query(query);
     }
 

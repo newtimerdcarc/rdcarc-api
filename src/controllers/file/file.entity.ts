@@ -5,6 +5,9 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 export class File {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+    
+    @Column()
+    editable: boolean;
 
     @Column()
     title: string;
@@ -24,17 +27,16 @@ export class File {
     @Column('json')
     date: { year: number, month: number, day: number };
 
-    @Column()
-    subject: string;
+    // @Column()
+    // subject: string;
+    @Column('json')
+    subject: string[];
 
     @Column()
     type: string;
 
     @Column()
     size: string;
-
-    @Column()
-    resolution: string;
 
     @Column()
     contributor: string;
@@ -62,7 +64,4 @@ export class File {
 
     @Column()
     source: string;
-
-    @Column()
-    typeNew: string;
 }

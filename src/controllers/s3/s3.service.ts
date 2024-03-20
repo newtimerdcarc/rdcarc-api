@@ -353,10 +353,27 @@ export class S3Service {
         }
     }
 
-    private removeS3UrlPrefix(url: string): string {
+    removeS3UrlPrefix(url: string): string {
         let resultado = url.replace("https://transfersource-prod.s3.sa-east-1.amazonaws.com/", "");
         resultado = resultado.replace(/\.[^/.]+$/, ".xml");
         return resultado;
+    }
+
+    async uploadMetadataJsonToS3(json: any, path: string): Promise<void> {
+        const s3 = this.getS3();
+
+        const params: S3.PutObjectRequest = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: `${path}/metadata.json`,
+            Body: JSON.stringify(json),
+            ContentType: 'application/json'
+        };
+
+        try {
+            await s3.putObject(params).promise();
+        } catch (error) {
+            throw error;
+        }
     }
 
     async uploadXmlToS3(file: any): Promise<void> {

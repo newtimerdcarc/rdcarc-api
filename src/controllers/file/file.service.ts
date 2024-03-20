@@ -23,8 +23,14 @@ export class FileService {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
         const day = currentDate.getDate();
-
         return { year, month, day };
+    }
+
+    convertToDateISO(dateObject: { year: number; month: number; day: number }): string {
+        const { year, month, day } = dateObject;
+        const monthString = month < 10 ? `0${month}` : `${month}`;
+        const dayString = day < 10 ? `0${day}` : `${day}`;
+        return `${year}-${monthString}-${dayString}`;
     }
 
     bytesToKB(bytes: number): string {
@@ -46,6 +52,7 @@ export class FileService {
     }
 
     async basicCreate(file: File): Promise<any> {
+        file.editable = false;
         return await this.fileRepository.save(file);
     }
 
@@ -56,6 +63,7 @@ export class FileService {
 
         const arquivo: File = {
             id: uuidv4(),
+            editable: false,
             title: nameWithoutExtension,
             url,
             date: this.getCurrentDate(),
@@ -64,8 +72,7 @@ export class FileService {
             description: "",
             creator,
             package: package_id,
-            resolution: "",
-            subject: "",
+            subject: [""],
             contributor: "",
             coverage: "",
             format: "",
@@ -75,7 +82,7 @@ export class FileService {
             relation: "",
             rights: "",
             source: "",
-            typeNew: ""
+            // typeNew: ""
         };
 
         // Cria o arquivo
@@ -106,6 +113,44 @@ export class FileService {
         return this.fileRepository.find({ where: { package: package_id } });
     }
 
+    async findEditableByPackage(package_id: string): Promise<File[]> {
+        return this.fileRepository.find({ where: { package: package_id, editable: true } });
+    }
+
+    async uploadMetadata(package_id): Promise<void> {
+        const files = await this.findEditableByPackage(package_id);
+        const metadata = [];
+
+        const pacote = await this.packageService.findOne(package_id);
+        const path = `${pacote.title}/metadata`
+
+        if (files.length > 0) {
+            for (const file of files) {
+                const json = {
+                    "filename": this.s3Service.removeS3UrlPrefix(file.url),
+                    "dc.title": file.title,
+                    "dc.creator": file.creator,
+                    "dc.subject": file.subject,
+                    "dc.description": file.description,
+                    "dc.publisher": file.publisher,
+                    "dc.contributor": file.contributor,
+                    "dc.date": this.convertToDateISO(file.date),
+                    "dc.type": file.type,
+                    "dc.format": file.format,
+                    "dc.identifier": file.identifier,
+                    "dc.source": file.source,
+                    "dc.language": file.language,
+                    "dc.relation": file.relation,
+                    "dc.coverage": file.coverage,
+                    "dc.rights": file.rights
+                }
+
+                metadata.push(json);
+            }
+            await this.s3Service.uploadMetadataJsonToS3(metadata, path);
+        }
+    }
+
     async uploadXmls(package_id): Promise<void> {
         const files = await this.findByPackage(package_id);
         if (files.length > 0) {
@@ -133,6 +178,8 @@ export class FileService {
         if (!verify) {
             throw new HttpException('Arquivo nao encontrado', HttpStatus.BAD_REQUEST);
         }
+
+        body.editable = true;
 
         await this.fileRepository.update(id, body);
         return this.findOne(id);

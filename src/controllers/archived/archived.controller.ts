@@ -31,21 +31,21 @@ export class ArchivedController {
         return this.archivalService.findOne(uuid);
     }
 
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get('aips')
     @ApiOperation({ summary: 'RETORNA TODOS AIPS DO ARCHIVAL STORAGE' })
     async findAIPPackages(): Promise<any[]> {
         return this.archivalService.findAIPPackages();
     }
 
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get('aips/upload')
     @ApiOperation({ summary: 'RETORNA TODOS AIPS UPLOADED' })
     async findPackagesUploaded(): Promise<any[]> {
         return this.archivalService.findPackagesUploaded();
     }
 
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get('aips/deleted')
     @ApiOperation({ summary: 'RETORNA TODOS AIPS DELETADOS' })
     async findPackagesDeleted(): Promise<any[]> {

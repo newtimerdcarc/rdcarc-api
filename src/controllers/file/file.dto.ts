@@ -32,9 +32,6 @@ export class UpdateFileDto {
     date: string;
 
     @ApiProperty()
-    resolution: string;
-
-    @ApiProperty()
     contributor: string;
 
     @ApiProperty()
@@ -61,6 +58,6 @@ export class UpdateFileDto {
     @ApiProperty()
     source: string;
 
-    @ApiProperty()
-    typeNew: string;
+    // @ApiProperty()
+    // typeNew: string;
 }

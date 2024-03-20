@@ -36,12 +36,19 @@ export class FileController {
         this.fileService.uploadXmls(package_id);
     }
 
-    // @UseGuards(JwtAuthGuard)
-    @Get()
-    @ApiOperation({ summary: 'TODOS ARQUIVOS' })
-    async findAll(): Promise<File[]> {
-        return this.fileService.findAll();
+    @UseGuards(JwtAuthGuard)
+    @Post(':package_id/metadata')
+    @ApiOperation({ summary: 'CRIAÇÃO DA PASTA METADATA NO S3' })
+    async uploadMetadata(@Param('package_id') package_id: string): Promise<void> {
+        this.fileService.uploadMetadata(package_id);
     }
+
+    // @UseGuards(JwtAuthGuard)
+    // @Get()
+    // @ApiOperation({ summary: 'TODOS ARQUIVOS' })
+    // async findAll(): Promise<File[]> {
+    //     return this.fileService.findAll();
+    // }
 
     @UseGuards(JwtAuthGuard)
     @Get(':id')
@@ -50,7 +57,7 @@ export class FileController {
         return this.fileService.findOne(id);
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get(':package_id/package')
     @ApiOperation({ summary: 'BUSCAR ARQUIVOS VIA PACKAGE ID' })
     async findByPackage(@Param('package_id') package_id: string): Promise<File[]> {
@@ -74,11 +81,11 @@ export class FileController {
         return this.fileService.update(id, body);
     }
 
-    // @Delete()
-    // @ApiOperation({ summary: 'DELETAR TODOS OS ARQUIVOS DO BANCO DE DADOS' })
-    // async deletarTodos(): Promise<void> {
-    //     this.fileService.deletarTodos();
-    // }
+    @Delete()
+    @ApiOperation({ summary: 'DELETAR TODOS OS ARQUIVOS DO BANCO DE DADOS' })
+    async deletarTodos(): Promise<void> {
+        this.fileService.deletarTodos();
+    }
 
     @Delete('aws/:path')
     @ApiOperation({ summary: 'DELETAR PASTA AWS' })
